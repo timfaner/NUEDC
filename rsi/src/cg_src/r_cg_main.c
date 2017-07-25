@@ -1,3 +1,6 @@
+/*todo 无线调参时候的逻辑
+       调试时候的顺序*/
+
 /***********************************************************************************************************************
 `* DISCLAIMER
 * This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products.
@@ -55,21 +58,54 @@ Global variables and functions
 /* Start user code for global. Do not edit comment generated here */
 
 /*******************************************/
+
+//定义硬件接口
+#define OPENMV_WORK_ENABLE_PIN
+#define RSA_WORK_ENABLE_PIN
+
+#define OPENMV_TASK_SWICH1 PORT7.PODR.BIT.B3
+#define OPENMV_TASK_SWICH2 PORT7.PODR.BIT.B4
+
+#define RSA_TASK_SWICH1 PORT7.PIDR.BIT.B6
+#define RSA_TASK_SWICH2 PORT7.PIDR.BIT.B5
+
 /***************task flag*******************/
 
 #define TASK1  1
 #define TASK2  2
 #define TASK3  3
 #define TASK4  4
-uint8_t task_choose;
-/*******************************************/
-//define systemMonitor data_type  
 
+/*******************************************/
+//define openmv_data means
+#define ERROR_FLAG 0
+#define MAV_STATUS 1
+#define X 2
+#define Y 3
+#define LAND_FLAG 4
+
+#define MAV_STATUS_INIT 0
+#define MAV_STATUS_TAKEOFF 1
+#define MAV_STATUS_FLYING 2
+#define MAV_STATUS_PRELAND 3
+#define MAV_STATUS_OVEFRFLY 4
+#define MAV_STATUS_ERROR 255
 
 //define system envet 
-#define SYSTEM_BOOTUP 1
-#define SYSTEM_STARTBUTTON 2
-#define SYSTEM
+#define EVENT_BOOTUP 1
+#define EVENT_STARTBUTTON 2
+#define EVENT_ARMCHECK 4
+#define EVENT_TAKEOFF 8
+#define EVENT_OPENMVBOOTUP 16
+
+#define EVENT_XUNXIAN
+#define EVENT_PRELAND
+#define EVENT_OVERFLY
+#define EVENT_LAND
+#define EVENT_LANDED
+//define system error
+#define ERROR_TASK_NUMBER 1
+
 /******************************************/
 /***************pid parameters*************/
 #define tracking_target 90
@@ -87,14 +123,16 @@ int rasTaskSwitch(void);
 void rasCmdToOpenmv(uint8_t flag);
 void rasWirelessAdjustParameters(void);
 void rasOpenmvDataHandle(uint32_t * rx_buf);
+void task_error(uint8_t);
 
 /******************************************/
 
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
-volatile uint8_t openmv_data[6] = {0};
+volatile uint8_t openmv_data[6] = {255,255,255,255,255,255};
+//openmv_data：error mav_statu x y landflag 
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
-uint8_t system_event;
+uint16_t system_event;
 uint8_t system_error_code;
 /* End user code. Do not edit comment generated here */
 
@@ -112,31 +150,40 @@ void main(void)
     R_MAIN_UserInit();
 	spiReceive(rx_buffer);
 
-	systemEventUpdate(SYSTEM_BOOTUP);
+	systemEventUpdate(EVENT_BOOTUP);
 	
 
 
     /* Start user code. Do not edit comment generated here */
     task_number = rasTaskSwitch();
+	rasCmdToOpenmv(task_number); //切换openmv任务
 	systemMonitor(&task_number,1,MONITOR_DATA_TASK_NUMBER);
 	
 	//添加开始开关
-	while(PORT7.PIDR.BIT.B6 ==1){
+	while(RSA_WORK_ENABLE_PIN ==1){
 		delay_ms(10);
 	}
-	systemEventUpdate(SYSTEM_STARTBUTTON);
+	systemEventUpdate(EVENT_STARTBUTTON);
 
 	//倒计时
 
 
 
 	//	armcheck();
+	systemEventUpdate(EVENT_ARMCHECK);
 	//	mav_takeoff(1.0);
+	systemEventUpdate(EVENT_TAKEOFF);
+
 	while (getHeight() < 1.0)
 		delay_ms(40);
-		
-		
-    switch task_number:
+	
+	rasCmdToOpenmv(task_number);
+	OPENMV_WORK_ENABLE_PIN ==1; //通知openmv开始工作 将该引脚置高
+	systemEventUpdate(EVENT_OPENMVBOOTUP);
+	delay_ms(100);  //wait openmv initialize
+	
+
+    switch task_number{
 		case TASK1:
 			task1();
 			break;
@@ -147,11 +194,11 @@ void main(void)
 			task3();
 			break;
 		case TASK4:
-			task(4);
+			task4();
 			break;
 		case -1:
 			break;
-	
+	}
     /* End user code. Do not edit comment generated here */
 }
 /***********************************************************************************************************************
@@ -220,7 +267,7 @@ void rasOpenmvDataHandle(uint8_t * rx_buf)
 		if(rx_buf[4] == 1)
 		{
 			SCI5_Send_string("Landing");
-//			mav_land();
+//			
 		}
 	}
 	else if(rx_buf[0] == 1)
@@ -239,22 +286,23 @@ void rasOpenmvDataHandle(uint8_t * rx_buf)
 	else
 		SCI5_Send_string("wrong error_flag data");
 }
+
 int rasTaskSwitch(void)
 {	
 	
-	if(!(PORT7.PIDR.BIT.B6) && !(PORT7.PIDR.BIT.B5))
+	if(!(RSA_TASK_SWICH1) && !(RSA_TASK_SWICH2))
 	{
 		return TASK1;
 	}
-	else if(!(PORT7.PIDR.BIT.B6) && PORT7.PIDR.BIT.B5 )
+	else if(!(RSA_TASK_SWICH1) && RSA_TASK_SWICH2 )
 	{
 		return TASK2;
 	}
-	else if(PORT7.PIDR.BIT.B6 && !(PORT7.PIDR.BIT.B5))
+	else if(RSA_TASK_SWICH1 && !(RSA_TASK_SWICH2))
 	{
 		return TASK3;
 	}
-	else if(PORT7.PIDR.BIT.B6 && PORT7.PIDR.BIT.B5)
+	else if(RSA_TASK_SWICH1 && RSA_TASK_SWICH2)
 	{
 		return TASK4;
 	}
@@ -263,20 +311,62 @@ int rasTaskSwitch(void)
 }
 
 void task1(void)
-{
-	uint8_t *data_to_send, count, *tx_buf;
-	rasCmdToOpenmv(task1_flag);
-	delay_ms(100);  //wait openmv initialize
-	while(1)
-	{
+{	int land_mark = 0;
 
-		for(count = 0; count < 9; count++)
-		{
-			sprintf(tx_buf, "%s", openmv_data_flow[count]);
-			SCI5_Serial_Send(tx_buf, strlen(*tx_buf));
+	while(1){
+		if(land_mark == landed)break;
+
+		if(openmv_data[ERROR_FLAG] == 0)
+		{	systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
+			rasOpenmvDataHandle(openmv_data);
+
+			if(openmv_data[LAND_FLAG] !=1){ //开始降落
+				systemEventUpdate(EVENT_LAND);
+				//mav_land();
+				// while(land_mark != LANDED){
+				// 	updata land mark
+				// 	and updata EVENT_LANDED
+				// }
+			}
+			else{ //降落前的调整
+				switch openmv_data[MAV_STATUS]{
+					case MAV_STATUS_INIT:
+						break;
+					case MAV_STATUS_TAKEOFF:
+						systemEventUpdate(EVENT_XUNXIAN)
+						//dataFushion();
+						//pid 
+						//send to apm
+						break;
+					case MAV_STATUS_FLYING:
+						systemEventUpdate(EVENT_XUNXIAN)
+						//dataFushion();
+						//pid
+						//send to apm
+						break;
+					case MAV_STATUS_PRELAND:
+						systemEventUpdate(EVENT_PRELAND)
+						//dataFushion();
+						//pid
+						//send to apm
+						break;
+					case MAV_STATUS_OVEFRFLY:
+						systemEventUpdate(EVENT_OVERFLY)
+						//dataFushion();
+						//pid
+						//send to apm
+						break;
+					case MAV_STATUS_ERROR:
+						break;
+				}
+
+			}
 		}
-		rasOpenmvDataHandle(openmv_data);
+		else
+			taskError(openmv_data[ERROR_FLAG]);
+		
 	}
+	
 }
 void task2(void)
 {
@@ -290,31 +380,35 @@ void task4(void)
 {
 
 }
+
+void taskError(uint8_t openmverror){
+	
+}
 void rasCmdToOpenmv(uint8_t flag)
 {
 	if(flag ==TASK1)
 	{
-		PORT7.PODR.BIT.B3 = 0;
-		PORT7.PODR.BIT.B4 = 0;
+		OPENMV_TASK_SWICH1 = 0;
+		OPENMV_TASK_SWICH2 = 0;
 	}
 	else if(flag ==TASK2)
 	{
-		PORT7.PODR.BIT.B3 = 1;
-		PORT7.PODR.BIT.B4 = 0;
+		OPENMV_TASK_SWICH1 = 1;
+		OPENMV_TASK_SWICH2 = 0;
 	}
 	else if(flag ==TASK3)
 	{
-		PORT7.PODR.BIT.B3 = 0;
-		PORT7.PODR.BIT.B4 = 1;
+		OPENMV_TASK_SWICH1 = 0;
+		OPENMV_TASK_SWICH2 = 1;
 	}
 	else if(flag ==TASK4)
 	{
-		PORT7.PODR.BIT.B3 = 1;
-		PORT7.PODR.BIT.B4 = 1;
+		OPENMV_TASK_SWICH1 = 1;
+		OPENMV_TASK_SWICH2 = 1;
 	}
 	else
 	{
-		SCI5_Send_string("task command error!");
+		systemErrorUpdate(ERROR_TASK_NUMBER);
 	}
 }
 
