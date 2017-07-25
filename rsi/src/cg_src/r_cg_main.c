@@ -43,8 +43,11 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "pid_speed.h"
 #include "stdlib.h"
+#include "mavcontrol.h"
+#include "systemmonitor.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
+
 
 /***********************************************************************************************************************
 Global variables and functions
@@ -53,13 +56,20 @@ Global variables and functions
 
 /*******************************************/
 /***************task flag*******************/
-#define task1_flag  0
-#define task2_flag  1
-#define task3_flag  2
-#define task4_flag  3
+
+#define TASK1  1
+#define TASK2  2
+#define TASK3  3
+#define TASK4  4
 uint8_t task_choose;
 /*******************************************/
+//define systemMonitor data_type  
 
+
+//define system envet 
+#define SYSTEM_BOOTUP 1
+#define SYSTEM_STARTBUTTON 2
+#define SYSTEM
 /******************************************/
 /***************pid parameters*************/
 #define tracking_target 90
@@ -73,7 +83,7 @@ void task1(void);
 void task2(void);
 void task3(void);
 void task4(void);
-void rasTaskSwitch(void);
+int rasTaskSwitch(void);
 void rasCmdToOpenmv(uint8_t flag);
 void rasWirelessAdjustParameters(void);
 void rasOpenmvDataHandle(uint32_t * rx_buf);
@@ -84,6 +94,8 @@ uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
 volatile uint8_t openmv_data[6] = {0};
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
+uint8_t system_event;
+uint8_t system_error_code;
 /* End user code. Do not edit comment generated here */
 
 
@@ -95,20 +107,51 @@ void R_MAIN_UserInit(void);
 * Return Value : None
 ***********************************************************************************************************************/
 void main(void)
-{
+{	int task_number = 0;
+
     R_MAIN_UserInit();
-    spi_receive(rx_buffer);
+	spiReceive(rx_buffer);
+
+	systemEventUpdate(SYSTEM_BOOTUP);
+	
+
+
     /* Start user code. Do not edit comment generated here */
-    rasTaskSwitch();
-//	armcheck();
-//	mav_takeoff(1.0);
-    while (1U)
-    {
-    	if(task_choose == task1_flag)
-    	{
-    		task1();
-    	}
-    }
+    task_number = rasTaskSwitch();
+	systemMonitor(&task_number,1,MONITOR_DATA_TASK_NUMBER);
+	
+	//添加开始开关
+	while(PORT7.PIDR.BIT.B6 ==1){
+		delay_ms(10);
+	}
+	systemEventUpdate(SYSTEM_STARTBUTTON);
+
+	//倒计时
+
+
+
+	//	armcheck();
+	//	mav_takeoff(1.0);
+	while (getHeight() < 1.0)
+		delay_ms(40);
+		
+		
+    switch task_number:
+		case TASK1:
+			task1();
+			break;
+		case TASK2:
+			task2();
+			break;
+		case TASK3:
+			task3();
+			break;
+		case TASK4:
+			task(4);
+			break;
+		case -1:
+			break;
+	
     /* End user code. Do not edit comment generated here */
 }
 /***********************************************************************************************************************
@@ -127,16 +170,17 @@ void R_MAIN_UserInit(void)
 	R_RSPI0_Start();
 
 
-//	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
-//	flag_data_updated=getFlagDataUpdated();
-//	apm_attitude=getAttitude();
-//	wait_link();
-//	requestDataStream();
-//
-//	debug_text("\nRx Initialized\n");
+	//	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
+	//	flag_data_updated=getFlagDataUpdated();
+	//	apm_attitude=getAttitude();
+	//	wait_link();
+	//	requestDataStream();
+	//
+	//	debug_text("\nRx Initialized\n");
 
     /* End user code. Do not edit comment generated here */
 }
+
 
 /* Start user code for adding. Do not edit comment generated here */
 void rasOpenmvDataHandle(uint8_t * rx_buf)
@@ -195,34 +239,29 @@ void rasOpenmvDataHandle(uint8_t * rx_buf)
 	else
 		SCI5_Send_string("wrong error_flag data");
 }
-void rasTaskSwitch(void)
-{
-	rasWirelessAdjustParameters();
-	SCI5_Send_string("please choose task:");
-	delay_ms(5000);
+int rasTaskSwitch(void)
+{	
+	
 	if(!(PORT7.PIDR.BIT.B6) && !(PORT7.PIDR.BIT.B5))
 	{
-		SCI5_Send_string("choose task1");
-		task_choose = task1_flag;
+		return TASK1;
 	}
 	else if(!(PORT7.PIDR.BIT.B6) && PORT7.PIDR.BIT.B5 )
 	{
-		SCI5_Send_string("choose task2");
-		task2();
+		return TASK2;
 	}
 	else if(PORT7.PIDR.BIT.B6 && !(PORT7.PIDR.BIT.B5))
 	{
-		SCI5_Send_string("choose task3");
-		task3();
+		return TASK3;
 	}
 	else if(PORT7.PIDR.BIT.B6 && PORT7.PIDR.BIT.B5)
 	{
-		SCI5_Send_string("choose task4");
-		task4();
+		return TASK4;
 	}
 	else
-		SCI5_Send_string("choose task error!");
+		return -1;
 }
+
 void task1(void)
 {
 	uint8_t *data_to_send, count, *tx_buf;
@@ -253,22 +292,22 @@ void task4(void)
 }
 void rasCmdToOpenmv(uint8_t flag)
 {
-	if(task1_flag == flag)
+	if(flag ==TASK1)
 	{
 		PORT7.PODR.BIT.B3 = 0;
 		PORT7.PODR.BIT.B4 = 0;
 	}
-	else if(task2_flag == flag)
+	else if(flag ==TASK2)
 	{
 		PORT7.PODR.BIT.B3 = 1;
 		PORT7.PODR.BIT.B4 = 0;
 	}
-	else if(task3_flag == flag)
+	else if(flag ==TASK3)
 	{
 		PORT7.PODR.BIT.B3 = 0;
 		PORT7.PODR.BIT.B4 = 1;
 	}
-	else if(task4_flag == flag)
+	else if(flag ==TASK4)
 	{
 		PORT7.PODR.BIT.B3 = 1;
 		PORT7.PODR.BIT.B4 = 1;
@@ -311,4 +350,4 @@ void rasWirelessAdjustParameters(void)
 		SCI5_Send_string("cmd error");
 	}
 }
-/* End user code. Do not edit comment generated here */
+

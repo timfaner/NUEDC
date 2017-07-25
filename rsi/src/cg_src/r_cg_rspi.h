@@ -266,6 +266,6 @@ static void r_rspi0_callback_receiveend(void);
 static void r_rspi0_callback_error(uint8_t err_type);
 
 /* Start user code for function. Do not edit comment generated here */
-void spi_receive(uint32_t * const rx_buf);
+void spiReceive(uint32_t * const rx_buf);
 /* End user code. Do not edit comment generated here */
 #endif
