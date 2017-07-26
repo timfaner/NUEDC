@@ -40,7 +40,6 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "stdlib.h"
 #include "string.h"
-#include "stdio.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -563,7 +562,6 @@ void SCI5_Send_string(uint8_t * const tx_buf)
 {
 	SCI5_Serial_Send(tx_buf, strlen(tx_buf));
 }
-/* End user code. Do not edit comment generated here */
 
 void  uart_5_printf(unsigned char * returndata,const unsigned char *format,...){
 	va_list ap;
@@ -572,7 +570,7 @@ void  uart_5_printf(unsigned char * returndata,const unsigned char *format,...){
 	vsprintf(returndata,format,ap);
 	//debug_text(print_list);
 	va_end(ap);
-    
+
 }
 void debug_text(unsigned char * sendtext ){
 	int length=0;
@@ -583,3 +581,4 @@ void debug_text(unsigned char * sendtext ){
 	}
 	SCI5_Serial_Send(sendtext,length);
 }
+/* End user code. Do not edit comment generated here */

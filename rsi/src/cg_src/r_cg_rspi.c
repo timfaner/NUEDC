@@ -193,7 +193,7 @@ MD_STATUS R_RSPI0_Send_Receive(uint32_t * const tx_buf, uint16_t tx_num, uint32_
 }
 
 /* Start user cve(ode for adding. Do not edit comment generated here */
-void spiReceive(uint32_t * const rx_buf)
+void spiReceive (uint32_t * const rx_buf)
 {
 	uint32_t tx_buf = 0;
 	spi_rx_idle = 0;

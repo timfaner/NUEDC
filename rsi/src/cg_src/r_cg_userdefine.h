@@ -34,6 +34,6 @@ User definitions
 #define FAST_INTERRUPT_VECTOR 0
 
 /* Start user code for function. Do not edit comment generated here */
-#include "systemmonitor.h"
+#include "../Mavlink_lib/Mavlink_lib.h"
 /* End user code. Do not edit comment generated here */
 #endif

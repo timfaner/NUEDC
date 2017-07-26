@@ -1,6 +1,3 @@
-/*todo 无线调参时候的逻辑
-       调试时候的顺序*/
-
 /***********************************************************************************************************************
 `* DISCLAIMER
 * This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products.
@@ -46,10 +43,9 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "pid_speed.h"
 #include "stdlib.h"
-
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
-
+#include "systemmonitor.h"
 
 /***********************************************************************************************************************
 Global variables and functions
@@ -57,7 +53,7 @@ Global variables and functions
 /* Start user code for global. Do not edit comment generated here */
 
 /*******************************************/
-
+/***************task flag*******************/
 //定义硬件接口
 #define OPENMV_WORK_ENABLE_PIN PORT9.PODR.BIT.B1
 #define RSA_WORK_ENABLE_PIN PORT9.PIDR.BIT.B2
@@ -90,7 +86,7 @@ Global variables and functions
 #define MAV_STATUS_OVEFRFLY 4
 #define MAV_STATUS_ERROR 255
 
-//define system envet 
+//define system envet
 #define EVENT_BOOTUP 1
 #define EVENT_STARTBUTTON 2
 #define EVENT_ARMCHECK 4
@@ -129,7 +125,7 @@ void taskError(uint8_t);
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
 volatile uint8_t openmv_data[6] = {255,255,255,255,255,255};
-//openmv_data：error mav_statu x y landflag 
+//openmv_data：error mav_statu x y landflag
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
 uint16_t system_event;
 uint8_t system_error_code;
@@ -150,14 +146,14 @@ void main(void)
 	spiReceive(rx_buffer);
 
 	systemEventUpdate(EVENT_BOOTUP);
-	
+
 
 
     /* Start user code. Do not edit comment generated here */
     task_number = rasTaskSwitch();
 	rasCmdToOpenmv(task_number); //切换openmv任务
 	systemMonitor(&task_number,1,MONITOR_DATA_TASK_NUMBER);
-	
+
 	//添加开始开关
 	while(RSA_WORK_ENABLE_PIN ==1){
 		delay_ms(10);
@@ -175,12 +171,12 @@ void main(void)
 
 	while (getHeight() < 1.0)
 		delay_ms(40);
-	
+
 	rasCmdToOpenmv(task_number);
 	OPENMV_WORK_ENABLE_PIN = 1; //通知openmv开始工作 将该引脚置高
 	systemEventUpdate(EVENT_OPENMVBOOTUP);
 	delay_ms(100);  //wait openmv initialize
-	
+
 
     switch (task_number){
 		case TASK1:
@@ -266,7 +262,7 @@ void rasOpenmvDataHandle(uint8_t * rx_buf)
 		if(rx_buf[4] == 1)
 		{
 			SCI5_Send_string("Landing");
-//			
+//
 		}
 	}
 	else if(rx_buf[0] == 1)
@@ -287,8 +283,8 @@ void rasOpenmvDataHandle(uint8_t * rx_buf)
 }
 
 int rasTaskSwitch(void)
-{	
-	
+{
+
 	if(!(RSA_TASK_SWICH1) && !(RSA_TASK_SWICH2))
 	{
 		return TASK1;
@@ -334,7 +330,7 @@ void task1(void)
 					case MAV_STATUS_TAKEOFF:
 						systemEventUpdate(EVENT_XUNXIAN);
 						//dataFushion();
-						//pid 
+						//pid
 						//send to apm
 						break;
 					case MAV_STATUS_FLYING:
@@ -363,9 +359,9 @@ void task1(void)
 		}
 		else
 			taskError(openmv_data[ERROR_FLAG]);
-		
+
 	}
-	
+
 }
 void task2(void)
 {
@@ -381,7 +377,7 @@ void task4(void)
 }
 
 void taskError(uint8_t openmverror){
-	
+
 }
 void rasCmdToOpenmv(uint8_t flag)
 {
