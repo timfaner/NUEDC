@@ -60,8 +60,8 @@ Global variables and functions
 /*******************************************/
 
 //定义硬件接口
-#define OPENMV_WORK_ENABLE_PIN
-#define RSA_WORK_ENABLE_PIN
+#define OPENMV_WORK_ENABLE_PIN PORT9.PODR.BIT.B1
+#define RSA_WORK_ENABLE_PIN PORT9.PODR.BIT.B2
 
 #define OPENMV_TASK_SWICH1 PORT7.PODR.BIT.B3
 #define OPENMV_TASK_SWICH2 PORT7.PODR.BIT.B4
