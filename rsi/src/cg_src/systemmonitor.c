@@ -25,6 +25,35 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     SCI5_Serial_Send(package,arg_count+6,data_type);
 }
 
+void systemDataUpdate(float *data,data_count,uint8_t data_type){
+    unsigned char package[data_count][256];
+    unsigned char send[256];
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int temp = 0;
+    int length[data_count]=[0];
+	unsigned char * text;
+	
+    for(i = 0;i< data_count,i++){
+        uart_5_printf(package[i],"%.2f",*(data+i));
+        text = package[i];
+        while(*text!='\0'){
+		    length[i]++;
+		    text++;
+	    }
+        package[i][length[i]] = 255
+    
+    }
+    for(i = 0;i< data_count,i++){
+        for(j = 0;j<length[i]+1;j++){
+            send[k] = package[i][j];
+            k++;
+        }
+    }
+    systemMonitor(send,k,data_type);
+}
+
 void systemEventUpdate(uint16_t new_event){
     uint8_t package[2];
 

@@ -344,5 +344,7 @@ MD_STATUS SCI5_Serial_Send(uint8_t * const tx_buf, uint16_t tx_num);
 MD_STATUS SCI5_Serial_Receive(uint8_t * rx_buf, uint16_t rx_num);
 uint16_t sci5_receive_available(void);
 void SCI5_Send_string(uint8_t * const tx_buf);
+void debug_text(unsigned char * sendtext );
+void uart_5_printf(unsigned char *,const char *format, ...);
 /* End user code. Do not edit comment generated here */
 #endif
