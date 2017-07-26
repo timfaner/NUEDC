@@ -8,3 +8,4 @@ extern uint8_t system_error_code;
 void systemMonitor(uint8_t *arg,int count,uint8_t data_type);
 void systemEventUpdate(uint16_t);
 void systemErrorUpdate(uint8_t);
+void systemDataUpdate(float *data,int data_count,uint8_t data_type);

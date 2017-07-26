@@ -46,8 +46,7 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "pid_speed.h"
 #include "stdlib.h"
-#include "mavcontrol.h"
-#include "systemmonitor.h"
+
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -98,11 +97,11 @@ Global variables and functions
 #define EVENT_TAKEOFF 8
 #define EVENT_OPENMVBOOTUP 16
 
-#define EVENT_XUNXIAN
-#define EVENT_PRELAND
-#define EVENT_OVERFLY
-#define EVENT_LAND
-#define EVENT_LANDED
+#define EVENT_XUNXIAN 1
+#define EVENT_PRELAND 1
+#define EVENT_OVERFLY 1
+#define EVENT_LAND 1
+#define EVENT_LANDED 1
 //define system error
 #define ERROR_TASK_NUMBER 1
 
@@ -123,7 +122,7 @@ int rasTaskSwitch(void);
 void rasCmdToOpenmv(uint8_t flag);
 void rasWirelessAdjustParameters(void);
 void rasOpenmvDataHandle(uint32_t * rx_buf);
-void task_error(uint8_t);
+void taskError(uint8_t);
 
 /******************************************/
 
@@ -178,12 +177,12 @@ void main(void)
 		delay_ms(40);
 	
 	rasCmdToOpenmv(task_number);
-	OPENMV_WORK_ENABLE_PIN ==1; //通知openmv开始工作 将该引脚置高
+	OPENMV_WORK_ENABLE_PIN = 1; //通知openmv开始工作 将该引脚置高
 	systemEventUpdate(EVENT_OPENMVBOOTUP);
 	delay_ms(100);  //wait openmv initialize
 	
 
-    switch task_number{
+    switch (task_number){
 		case TASK1:
 			task1();
 			break;
@@ -314,7 +313,7 @@ void task1(void)
 {	int land_mark = 0;
 
 	while(1){
-		if(land_mark == landed)break;
+		//if(land_mark == landed)break;
 
 		if(openmv_data[ERROR_FLAG] == 0)
 		{	systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
@@ -329,29 +328,29 @@ void task1(void)
 				// }
 			}
 			else{ //降落前的调整
-				switch openmv_data[MAV_STATUS]{
+				switch (openmv_data[MAV_STATUS]){
 					case MAV_STATUS_INIT:
 						break;
 					case MAV_STATUS_TAKEOFF:
-						systemEventUpdate(EVENT_XUNXIAN)
+						systemEventUpdate(EVENT_XUNXIAN);
 						//dataFushion();
 						//pid 
 						//send to apm
 						break;
 					case MAV_STATUS_FLYING:
-						systemEventUpdate(EVENT_XUNXIAN)
+						systemEventUpdate(EVENT_XUNXIAN);
 						//dataFushion();
 						//pid
 						//send to apm
 						break;
 					case MAV_STATUS_PRELAND:
-						systemEventUpdate(EVENT_PRELAND)
+						systemEventUpdate(EVENT_PRELAND);
 						//dataFushion();
 						//pid
 						//send to apm
 						break;
 					case MAV_STATUS_OVEFRFLY:
-						systemEventUpdate(EVENT_OVERFLY)
+						systemEventUpdate(EVENT_OVERFLY);
 						//dataFushion();
 						//pid
 						//send to apm
