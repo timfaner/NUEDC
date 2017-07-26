@@ -1,3 +1,4 @@
+
 #include "r_cg_cmt.h"
 #include "r_cg_rspi.h"
 #include "r_cg_sci.h"
@@ -5,6 +6,8 @@
 #include "r_cg_cgc.h"
 #include "systemmonitor.h"
 #include "stdlib.h"
+
+
 //发送指定数据 分别是数据数组 数据个数 类型
 void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     static uint8_t send_counter;

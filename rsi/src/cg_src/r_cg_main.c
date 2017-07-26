@@ -1,21 +1,3 @@
-/***********************************************************************************************************************
-`* DISCLAIMER
-* This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products.
-* No other uses are authorized. This software is owned by Renesas Electronics Corporation and is protected under all
-* applicable laws, including copyright laws. 
-* THIS SOFTWARE IS PROVIDED "AS IS" AND RENESAS MAKES NO WARRANTIESREGARDING THIS SOFTWARE, WHETHER EXPRESS, IMPLIED
-* OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NON-INFRINGEMENT.  ALL SUCH WARRANTIES ARE EXPRESSLY DISCLAIMED.TO THE MAXIMUM EXTENT PERMITTED NOT PROHIBITED BY
-* LAW, NEITHER RENESAS ELECTRONICS CORPORATION NOR ANY OF ITS AFFILIATED COMPANIES SHALL BE LIABLE FOR ANY DIRECT,
-* INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES FOR ANY REASON RELATED TO THIS SOFTWARE, EVEN IF RENESAS OR
-* ITS AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-* Renesas reserves the right, without notice, to make changes to this software and to discontinue the availability 
-* of this software. By using this software, you agree to the additional terms and conditions found by accessing the 
-* following link:
-* http://www.renesas.com/disclaimer
-*
-* Copyright (C) 2015 Renesas Electronics Corporation. All rights reserved.
-***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 * File Name    : r_cg_main.c
@@ -43,69 +25,29 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "pid_speed.h"
 #include "stdlib.h"
+#include "math.h"
+#include "systemmonitor.h"
+#include "offset_calculate.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
-#include "systemmonitor.h"
+
 
 /***********************************************************************************************************************
 Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 
-/*******************************************/
-/***************task flag*******************/
-//定义硬件接口
-#define OPENMV_WORK_ENABLE_PIN PORT9.PODR.BIT.B1
-#define RSA_WORK_ENABLE_PIN PORT9.PIDR.BIT.B2
-
-#define OPENMV_TASK_SWICH1 PORT7.PODR.BIT.B3
-#define OPENMV_TASK_SWICH2 PORT7.PODR.BIT.B4
-
-#define RSA_TASK_SWICH1 PORT7.PIDR.BIT.B6
-#define RSA_TASK_SWICH2 PORT7.PIDR.BIT.B5
-
-/***************task flag*******************/
-
-#define TASK1  1
-#define TASK2  2
-#define TASK3  3
-#define TASK4  4
-
-/*******************************************/
-//define openmv_data means
-#define ERROR_FLAG 0
-#define MAV_STATUS 1
-#define X 2
-#define Y 3
-#define LAND_FLAG 4
-
-#define MAV_STATUS_INIT 0
-#define MAV_STATUS_TAKEOFF 1
-#define MAV_STATUS_FLYING 2
-#define MAV_STATUS_PRELAND 3
-#define MAV_STATUS_OVEFRFLY 4
-#define MAV_STATUS_ERROR 255
-
-//define system envet
-#define EVENT_BOOTUP 1
-#define EVENT_STARTBUTTON 2
-#define EVENT_ARMCHECK 4
-#define EVENT_TAKEOFF 8
-#define EVENT_OPENMVBOOTUP 16
-
-#define EVENT_XUNXIAN 1
-#define EVENT_PRELAND 1
-#define EVENT_OVERFLY 1
-#define EVENT_LAND 1
-#define EVENT_LANDED 1
-//define system error
-#define ERROR_TASK_NUMBER 1
 
 /******************************************/
 /***************pid parameters*************/
-#define tracking_target 90
-#define landing_target 90
+#define x_target 60
+#define y_target 80
 float *Kp, *Ki, *Kd;
+/******************************************/
+
+/******************************************/
+/*********Renesas get PIX attiaude*********/
+volatile float ** ras_get_pix_attitude;
 /******************************************/
 
 /******************************************/
@@ -116,17 +58,18 @@ void task3(void);
 void task4(void);
 int rasTaskSwitch(void);
 void rasCmdToOpenmv(uint8_t flag);
-void rasWirelessAdjustParameters(void);
-void rasOpenmvDataHandle(uint32_t * rx_buf);
+//void rasWirelessAdjustParameters(void);
 void taskError(uint8_t);
-
 /******************************************/
 
+/*************************************************/
+/*************spi parameters**********************/
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
 volatile uint8_t openmv_data[6] = {255,255,255,255,255,255};
 //openmv_data：error mav_statu x y landflag
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
+/*************************************************/
 uint16_t system_event;
 uint8_t system_error_code;
 /* End user code. Do not edit comment generated here */
@@ -140,14 +83,14 @@ void R_MAIN_UserInit(void);
 * Return Value : None
 ***********************************************************************************************************************/
 void main(void)
-{	int task_number = 0;
-
+{
+	int task_number = 0;
+	//initial
     R_MAIN_UserInit();
+    //get data from openmv
 	spiReceive(rx_buffer);
 
 	systemEventUpdate(EVENT_BOOTUP);
-
-
 
     /* Start user code. Do not edit comment generated here */
     task_number = rasTaskSwitch();
@@ -162,11 +105,9 @@ void main(void)
 
 	//倒计时
 
-
-
-	//	armcheck();
+		armcheck();
 	systemEventUpdate(EVENT_ARMCHECK);
-	//	mav_takeoff(1.0);
+		mav_takeoff(1.0);
 	systemEventUpdate(EVENT_TAKEOFF);
 
 	while (getHeight() < 1.0)
@@ -211,76 +152,19 @@ void R_MAIN_UserInit(void)
 	R_CMT3_Start();
 	R_RSPI0_Start();
 
+//		init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
+//		flag_data_updated=getFlagDataUpdated();
+//		apm_attitude=getAttitude();
+//		wait_link();
+//		requestDataStream();
 
-	//	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
-	//	flag_data_updated=getFlagDataUpdated();
-	//	apm_attitude=getAttitude();
-	//	wait_link();
-	//	requestDataStream();
-	//
-	//	debug_text("\nRx Initialized\n");
+		debug_text("\nRx Initialized\n");
 
     /* End user code. Do not edit comment generated here */
 }
 
 
 /* Start user code for adding. Do not edit comment generated here */
-void rasOpenmvDataHandle(uint8_t * rx_buf)
-{
-	float x_speed, y_speed;
-	if(rx_buf[0] == 0)
-	{
-		SCI5_Send_string("Working well");
-		if(rx_buf[1] == 0)
-			SCI5_Send_string("Openmv Initialing");
-		else if(rx_buf[1] == 1)
-			SCI5_Send_string("Taking off");
-		else if(rx_buf[1] == 2)//working position of
-		{
-			SCI5_Send_string("Go ahead");
-			x_speed = pid_start(tracking_target,rx_buf[2]);
-//			set_vel(x_speed, 0.0 ,0.0);
-        	delay_ms(2000);
-//        	set_vel(0,0,0);
-		}
-		else if(rx_buf[1] == 3)//landing position
-		{
-			SCI5_Send_string("pre_Land");
-			x_speed = pid_start(landing_target, rx_buf[2]);
-			y_speed = pid_start(landing_target, rx_buf[3]);
-//			set_vel(x_speed, y_speed, 0);
-        	delay_ms(2000);
-//        	set_vel(0,0,0);
-		}
-		else if(rx_buf[1] == 4)
-			SCI5_Send_string("Go backward");
-		else if(rx_buf[1] == 255)
-			SCI5_Send_string("mav_status error");
-		else
-			SCI5_Send_string("status data error");
-
-		if(rx_buf[4] == 1)
-		{
-			SCI5_Send_string("Landing");
-//
-		}
-	}
-	else if(rx_buf[0] == 1)
-	{
-		SCI5_Send_string("Unknown position");
-	}
-	else if(rx_buf[0] == 2)
-	{
-		SCI5_Send_string("can not get color data");
-		//rise cmd?
-	}
-	else if(rx_buf[0] == 3)
-	{
-		SCI5_Send_string("wrong task order");
-	}
-	else
-		SCI5_Send_string("wrong error_flag data");
-}
 
 int rasTaskSwitch(void)
 {
@@ -306,18 +190,19 @@ int rasTaskSwitch(void)
 }
 
 void task1(void)
-{	int land_mark = 0;
-
+{
+	int land_mark = 0;
+	float x_offset, y_offset, x_speed, y_speed;
 	while(1){
-		//if(land_mark == landed)break;
+		//if(land_ma=rk == landed)break;
 
 		if(openmv_data[ERROR_FLAG] == 0)
-		{	systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-			rasOpenmvDataHandle(openmv_data);
+		{
+			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
 
 			if(openmv_data[LAND_FLAG] !=1){ //开始降落
 				systemEventUpdate(EVENT_LAND);
-				//mav_land();
+//				mav_land();
 				// while(land_mark != LANDED){
 				// 	updata land mark
 				// 	and updata EVENT_LANDED
@@ -330,20 +215,31 @@ void task1(void)
 					case MAV_STATUS_TAKEOFF:
 						systemEventUpdate(EVENT_XUNXIAN);
 						//dataFushion();
+						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
+						y_speed = pid_start(y_target, y_offset);
 						//send to apm
+						set_vel(0.0, y_speed, 0.0);
 						break;
 					case MAV_STATUS_FLYING:
 						systemEventUpdate(EVENT_XUNXIAN);
 						//dataFushion();
+						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
+						y_speed = pid_start(y_target, y_offset);
 						//send to apm
+						set_vel(0.0, y_speed, 0.0);
 						break;
 					case MAV_STATUS_PRELAND:
 						systemEventUpdate(EVENT_PRELAND);
 						//dataFushion();
+						x_offset = rasX_offsetCalculate(openmv_data[3]);
+						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
+						x_speed = pid_start(x_target, x_offset);
+						y_speed = pid_start(y_target, y_offset);
 						//send to apm
+						set_vel(x_speed, y_speed, 0.0);
 						break;
 					case MAV_STATUS_OVEFRFLY:
 						systemEventUpdate(EVENT_OVERFLY);
@@ -407,6 +303,7 @@ void rasCmdToOpenmv(uint8_t flag)
 	}
 }
 
+/**********reserved******this function perhaps will be used later*****
 void rasWirelessAdjustParameters(void)
 {
 	unsigned char ch, *sci_Kp, *sci_Ki, *sci_Kd;
@@ -439,4 +336,4 @@ void rasWirelessAdjustParameters(void)
 		SCI5_Send_string("cmd error");
 	}
 }
-
+*/
