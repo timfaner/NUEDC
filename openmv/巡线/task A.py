@@ -166,7 +166,9 @@ while(True):
 
 
     if(error_flag == 0):
-        if mav_statu ==2:
+        if mav_statu == 1:
+            output[2] = roi_list[3][5]
+        elif mav_statu == 2:
            output[2] = roi_list[1][5]
         elif mav_statu == 3:
             if isoneof(statu_number,0b00011):
