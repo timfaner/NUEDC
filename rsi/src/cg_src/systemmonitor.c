@@ -27,10 +27,14 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     unsigned char data_type_str[4];
     
     unsigned long current_time;
-    unsigned char current_time_str[11];
+    unsigned char current_time_str[11] ={0};
     int i;
     
     package =  (uint8_t*)malloc(arg_count + 25);
+    
+    for(int i = 0;i<arg_count + 25){
+        *(package+1) = '\0';
+    }
     arg_str = (uint8_t*)malloc(arg_count+1);
     for(i = 0;i<arg_count;i++){
          *(arg_str+i) = *(arg+i) ;
