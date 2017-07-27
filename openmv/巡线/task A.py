@@ -200,7 +200,7 @@ while(True):
         elif mav_statu == 4:
             pass
 
-    if mav_statu = 3 and isaround(output[2],output[3]):
+    if mav_statu =＝ 3 and isaround(output[2],output[3]):
         land_flag = 1
 
 
