@@ -2,9 +2,9 @@
 import sensor, image, math, pyb, ustruct, utime
 from pyb import  SPI, Pin
 
-pin_start = Pin('P0', Pin.IN, Pin.PULL_DOWN)
-pin_task1 = Pin('P1', Pin.IN, Pin.PULL_DOWN)
-pin_task2 = Pin('P2', Pin.IN, Pin.PULL_DOWN)
+pin_start = Pin('P5', Pin.IN, Pin.PULL_DOWN)
+pin_task1 = Pin('P6', Pin.IN, Pin.PULL_DOWN)
+pin_task2 = Pin('P7', Pin.IN, Pin.PULL_DOWN)
 
 spi = SPI(2, SPI.MASTER, baudrate=int(1000000000/66), polarity=0, phase=0,bits=32)
 x = 1
