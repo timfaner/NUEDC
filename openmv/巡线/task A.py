@@ -1,6 +1,6 @@
 
-import sensor, image, math,pyb,ustruct,utime
-from pyb import  SPI,Pin
+import sensor, image, math, pyb, ustruct, utime
+from pyb import  SPI, Pin
 
 pin_start = Pin('P0', Pin.IN, Pin.PULL_DOWN)
 pin_task1 = Pin('P1', Pin.IN, Pin.PULL_DOWN)
@@ -20,7 +20,7 @@ def callinePoint(x1 = 1,y1 = 1,x2 = 1,y2 = 1,theta = 1):
 def isoneof(statu,*s):
     sr = 0
     for r in s:
-                if statu == r: sr = 1
+            if statu == r: sr = 1
     if sr ==1:
         return True;
     else:
@@ -31,7 +31,7 @@ def ismatchwith(a,b,c,d):
         return True;
     else: return False;
 
-def isaround(x,y)
+def isaround(x,y):
     if abs(x - 80)<4 and abs(y-60) < 4:
         return True
     else:return False
@@ -141,7 +141,7 @@ while(True):
     or ismatchwith(old_mav_statu,mav_statu,4,4):error_flag = 0
 
     elif ismatchwith(old_mav_statu,mav_statu,0,0): error_flag = 2
-
+    
     elif old_mav_statu != 255 and mav_statu == 255:       #进入错误状态
         start = pyb.millis()
         error_statu = 1
@@ -200,7 +200,7 @@ while(True):
         elif mav_statu == 4:
             pass
 
-    if mav_statu =＝ 3 and isaround(output[2],output[3]):
+    if mav_statu == 3 and isaround(output[2],output[3]):
         land_flag = 1
 
 
