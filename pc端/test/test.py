@@ -7,11 +7,16 @@ def ui_process():
     root =Tk()
     root.geometry("300x400+500+500")
 
+#输入
+    p = Entry(root,text = 'p')
+    p.place(x =10,y = 10)
+    
+
 #标签   
     L_titile = Label(root,text='zz软件',)
     L_titile.config(font='Helvetica -15 bold',fg='blue')
     L_titile.place(x=150,y=20,anchor="center")
-    L_author = Label(root, text='作者:LCC')
+    L_author = Label(root, text='TIM')
     L_author.config(font='Helvetica -10 bold')
     L_author.place(x=250,y=380)
 
@@ -33,7 +38,7 @@ def ui_process():
 #滑块
     W = Scale(root, from_=0, to=100,orient=HORIZONTAL)#orient=HORIZONTAL 横向，默认纵向
     W.place(x=50,y=300)
-    # print(W.get())  #获取滑块值
+    print(W.get())  #获取滑块值
 
 #菜单栏
     menubar = Menu(root)

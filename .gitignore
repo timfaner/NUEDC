@@ -4,3 +4,4 @@ mavlink_mac/*
 mavlink_macos/*
 mavlink_sender/*
 .vscode/*
+.DS_Store
