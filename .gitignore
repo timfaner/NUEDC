@@ -5,3 +5,4 @@ mavlink_macos/*
 mavlink_sender/*
 .vscode/*
 .DS_Store
+*.pyc
