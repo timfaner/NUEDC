@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for CMT module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/17
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -50,23 +50,6 @@ extern volatile unsigned long millis_100us;
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
-* Function Name: r_cmt_cmi2_interrupt
-* Description  : None
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-#if FAST_INTERRUPT_VECTOR == VECT_CMT2_CMI2
-#pragma interrupt r_cmt_cmi2_interrupt(vect=VECT(CMT2,CMI2),fint)
-#else
-#pragma interrupt r_cmt_cmi2_interrupt(vect=VECT(CMT2,CMI2))
-#endif
-static void r_cmt_cmi2_interrupt(void)
-{
-    /* Start user code. Do not edit comment generated here */
-	millis_100us++;
-    /* End user code. Do not edit comment generated here */
-}
-/***********************************************************************************************************************
 * Function Name: r_cmt_cmi3_interrupt
 * Description  : None
 * Arguments    : None
@@ -81,6 +64,23 @@ static void r_cmt_cmi3_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
 	millis_ms++;
+    /* End user code. Do not edit comment generated here */
+}
+/***********************************************************************************************************************
+* Function Name: r_cmt_cmi2_interrupt
+* Description  : None
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+#if FAST_INTERRUPT_VECTOR == VECT_CMT2_CMI2
+#pragma interrupt r_cmt_cmi2_interrupt(vect=VECT(CMT2,CMI2),fint)
+#else
+#pragma interrupt r_cmt_cmi2_interrupt(vect=VECT(CMT2,CMI2))
+#endif
+static void r_cmt_cmi2_interrupt(void)
+{
+    /* Start user code. Do not edit comment generated here */
+	millis_100us++;
     /* End user code. Do not edit comment generated here */
 }
 

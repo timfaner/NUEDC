@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  vect.h                                 */
 /*      DESCRIPTION  :  Definition of vector                   */
 /*      CPU SERIES   :  RX200                                  */

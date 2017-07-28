@@ -14,16 +14,16 @@
 * following link:
 * http://www.renesas.com/disclaimer
 *
-* Copyright (C) 2015 Renesas Electronics Corporation. All rights reserved.
+* Copyright (C) 2015, 2016 Renesas Electronics Corporation. All rights reserved.
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 * File Name    : r_cg_sci_user.c
-* Version      : Code Generator for RX23T V1.00.01.01 [30 Oct 2015]
+* Version      : Code Generator for RX23T V1.00.04.02 [29 Nov 2016]
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for SCI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/8
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -72,6 +72,10 @@ struct Tx_Circle_Queue * wait_sci5_tx_addr;
 volatile uint16_t sci5_tx_count = 0;
 
 extern volatile uint8_t sci5_tx_idle_token;
+
+//
+static uint8_t sci1_receive_temp[1] = {0};
+static uint8_t sci1_receive_char(void);
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
@@ -105,6 +109,7 @@ static void r_sci1_transmit_interrupt(void)
     }
     else
     {
+    	//SCI1.SCR.BIT.TIE = 0U;
         SCI1.SCR.BIT.TIE = 0U;
         SCI1.SCR.BIT.TEIE = 1U;
     }
@@ -153,6 +158,8 @@ static void r_sci1_receive_interrupt(void)
 		read_sci1_rx_addr = read_sci1_rx_addr->next;
 		sci1_rx_count--;
 	}
+
+	receive(sci1_receive_char());
 }
 /***********************************************************************************************************************
 * Function Name: r_sci1_receiveerror_interrupt
@@ -240,11 +247,11 @@ static void r_sci5_transmit_interrupt(void)
 			current_sci5_tx_addr = current_sci5_tx_addr->next;
 		}
 	}
-    else
-    {
-        SCI5.SCR.BIT.TIE = 0U;
-        SCI5.SCR.BIT.TEIE = 1U;
-    }
+	else
+	{
+		SCI5.SCR.BIT.TIE = 0U;
+		SCI5.SCR.BIT.TEIE = 1U;
+	}
 }
 
 /***********************************************************************************************************************
@@ -261,7 +268,7 @@ static void r_sci5_transmit_interrupt(void)
 static void r_sci5_transmitend_interrupt(void)
 {
     /* Set TXD5 pin */
-    PORTB.PMR.BYTE &= 0xFBU;
+    PORTB.PMR.BYTE &= 0xDFU;
     SCI5.SCR.BIT.TIE = 0U;
     SCI5.SCR.BIT.TE = 0U;
     SCI5.SCR.BIT.TEIE = 0U;
@@ -284,18 +291,18 @@ static void r_sci5_receive_interrupt(void)
 	//always get the data
 	current_sci5_rx_addr->data = SCI5.RDR;
 	//emergency stop
-	if(current_sci5_rx_addr->data == 's')
+	/*if(current_sci5_rx_addr->data == 's')
 	{
 		R_SCI1_Stop();
-//		my_printf("SCI1 stopped\n");
+		debug_text("SCI1 stopped\n");
 	}
 	if(current_sci5_rx_addr->data == 'i')
 	{
 		R_SCI1_Start();
 		SCI1.SCR.BIT.RIE = 1U;
 		SCI1.SCR.BIT.RE = 1U;
-//		my_printf("SCI1 reinitiated\n");
-	}
+		debug_text("SCI1 reinitiated\n");
+	}*/
 	//
 	current_sci5_rx_addr = current_sci5_rx_addr->next;
 	sci5_rx_count++;
@@ -433,5 +440,11 @@ void sci5_tx_circle_init(void)   //create the circle
 	}
 	current_sci5_tx_addr = &sci5_tx_circle[0];
 	wait_sci5_tx_addr = current_sci5_tx_addr;
+}
+
+static uint8_t sci1_receive_char(void)
+{
+	SCI1_Serial_Receive(sci1_receive_temp,1);
+	return *sci1_receive_temp;
 }
 /* End user code. Do not edit comment generated here */

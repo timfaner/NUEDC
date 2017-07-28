@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file includes user definition.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/17
 ***********************************************************************************************************************/
 #ifndef _USER_DEF_H
 #define _USER_DEF_H
@@ -34,14 +34,11 @@ User definitions
 #define FAST_INTERRUPT_VECTOR 0
 
 /* Start user code for function. Do not edit comment generated here */
-
 #include "../Mavlink_lib/Mavlink_lib.h"
-
-
+#include "user_main.h"
 
 /*******************************************/
 /***************port define*****************/
-//定义硬件接口
 #define OPENMV_WORK_ENABLE_PIN  PORT9.PODR.BIT.B1
 #define RSA_WORK_ENABLE_PIN 	PORT9.PIDR.BIT.B2
 
@@ -85,7 +82,6 @@ User definitions
 #define EVENT_LANDED 1
 //define system error
 #define ERROR_TASK_NUMBER 1
-
 
 
 /* End user code. Do not edit comment generated here */

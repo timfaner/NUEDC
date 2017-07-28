@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for CMT module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/17
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -49,55 +49,6 @@ volatile unsigned long millis_ms = 0;
 volatile unsigned long millis_100us = 0;
 /* End user code. Do not edit comment generated here */
 
-/***********************************************************************************************************************
-* Function Name: R_CMT2_Create
-* Description  : This function initializes the CMT2 channel.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-void R_CMT2_Create(void)
-{
-    /* Disable CMI2 interrupt */
-    IEN(CMT2,CMI2) = 0U;
-    
-    /* Cancel CMT stop state in LPC */
-    MSTP(CMT2) = 0U;
-
-    /* Set control registers */
-    CMT2.CMCR.WORD = _0000_CMT_CMCR_CKS_PCLK8 | _0040_CMT_CMCR_CMIE_ENABLE | _0080_CMT_CMCR_DEFAULT;
-    CMT2.CMCOR = _01F3_CMT2_CMCOR_VALUE;
-
-    /* Set CMI2 priority level */
-    IPR(CMT2,CMI2) = _0F_CMT_PRIORITY_LEVEL15;
-}
-/***********************************************************************************************************************
-* Function Name: R_CMT2_Start
-* Description  : This function starts the CMT2 channel counter.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-void R_CMT2_Start(void)
-{
-    /* Enable CMI2 interrupt in ICU */
-    IEN(CMT2,CMI2) = 1U;
-
-    /* Start CMT2 count */
-    CMT.CMSTR1.BIT.STR2 = 1U;
-}
-/***********************************************************************************************************************
-* Function Name: R_CMT2_Stop
-* Description  : This function stops the CMT2 channel counter.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-void R_CMT2_Stop(void)
-{
-    /* Disable CMI2 interrupt in ICU */
-    IEN(CMT2,CMI2) = 0U;
-
-    /* Stop CMT2 count */
-    CMT.CMSTR1.BIT.STR2 = 0U;
-}
 /***********************************************************************************************************************
 * Function Name: R_CMT3_Create
 * Description  : This function initializes the CMT3 channel.
@@ -147,6 +98,55 @@ void R_CMT3_Stop(void)
     /* Stop CMT3 count */
     CMT.CMSTR1.BIT.STR3 = 0U;
 }
+/***********************************************************************************************************************
+* Function Name: R_CMT2_Create
+* Description  : This function initializes the CMT2 channel.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_CMT2_Create(void)
+{
+    /* Disable CMI2 interrupt */
+    IEN(CMT2,CMI2) = 0U;
+    
+    /* Cancel CMT stop state in LPC */
+    MSTP(CMT2) = 0U;
+
+    /* Set control registers */
+    CMT2.CMCR.WORD = _0000_CMT_CMCR_CKS_PCLK8 | _0040_CMT_CMCR_CMIE_ENABLE | _0080_CMT_CMCR_DEFAULT;
+    CMT2.CMCOR = _01F3_CMT2_CMCOR_VALUE;
+
+    /* Set CMI2 priority level */
+    IPR(CMT2,CMI2) = _0F_CMT_PRIORITY_LEVEL15;
+}
+/***********************************************************************************************************************
+* Function Name: R_CMT2_Start
+* Description  : This function starts the CMT2 channel counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_CMT2_Start(void)
+{
+    /* Enable CMI2 interrupt in ICU */
+    IEN(CMT2,CMI2) = 1U;
+
+    /* Start CMT2 count */
+    CMT.CMSTR1.BIT.STR2 = 1U;
+}
+/***********************************************************************************************************************
+* Function Name: R_CMT2_Stop
+* Description  : This function stops the CMT2 channel counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_CMT2_Stop(void)
+{
+    /* Disable CMI2 interrupt in ICU */
+    IEN(CMT2,CMI2) = 0U;
+
+    /* Stop CMT2 count */
+    CMT.CMSTR1.BIT.STR2 = 0U;
+}
 
 /* Start user code for adding. Do not edit comment generated here */
 unsigned long millis(void)
@@ -161,13 +161,13 @@ unsigned long millis_us(void)
 	_millis_us = millis_100us;
 	return _millis_us;
 }
-void delay_100us(unsigned int us)
+void delay_100us(unsigned int us)  //閫傜敤浜庡皬浜?0ms
 {
 	unsigned long present_time;
 	present_time = millis_us();
 	while((millis_us() - present_time) <= us);
 }
-void delay_ms(unsigned int ms)
+void delay_ms(unsigned int ms)  //閫傜敤浜庡ぇ浜?0ms
 {
 	unsigned long present_time;
 	present_time = millis();

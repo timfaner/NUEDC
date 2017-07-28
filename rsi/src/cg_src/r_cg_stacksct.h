@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : Setting of Stack area.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/17
 ***********************************************************************************************************************/
 #ifndef _STACKSCT_H
 #define _STACKSCT_H

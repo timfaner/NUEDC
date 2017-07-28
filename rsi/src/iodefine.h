@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  iodefine.h                             */
 /*      DESCRIPTION  :  I/O register definitions               */
 /*      CPU SERIES   :  RX200                                  */

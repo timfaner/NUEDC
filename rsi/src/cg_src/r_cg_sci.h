@@ -14,16 +14,16 @@
 * following link:
 * http://www.renesas.com/disclaimer
 *
-* Copyright (C) 2015 Renesas Electronics Corporation. All rights reserved.
+* Copyright (C) 2015, 2016 Renesas Electronics Corporation. All rights reserved.
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 * File Name    : r_cg_sci.h
-* Version      : Code Generator for RX23T V1.00.01.01 [30 Oct 2015]
+* Version      : Code Generator for RX23T V1.00.04.02 [29 Nov 2016]
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for SCI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/8
 ***********************************************************************************************************************/
 #ifndef SCI_H
 #define SCI_H
@@ -78,6 +78,7 @@ Macro definitions (Register bit)
 #define _01_SCI_INTERNAL_SCK_OUTPUT               (0x01U) /* Internal clock selected, SCK pin as clock output */
 #define _02_SCI_INTERNAL_SCK_FIXED_HIGH           (0x02U) /* Internal clock selected, SCK pin output high */
 #define _02_SCI_EXTERNAL                          (0x02U) /* External clock selected */
+#define _02_SCI_EXTERNAL_TMR                      (0x02U) /* External or TMR clock selected */
 #define _03_SCI_EXTERNAL                          (0x03U) /* External clock selected */
 /* Transmit end interrupt enable (TEIE) */
 #define _00_SCI_TEI_INTERRUPT_DISABLE             (0x00U) /* TEI interrupt request disable */
@@ -321,7 +322,7 @@ static void r_sci5_callback_receiveerror(void);
 /* Start user code for function. Do not edit comment generated here */
 #define RX_BUFFER_MAX_VOLUME 64
 struct Circle_Queue{
-
+	//struct Circle_Queue * prev;
 	uint8_t data;
 	struct Circle_Queue * next;
 };
@@ -333,7 +334,7 @@ struct Tx_Circle_Queue{
 	uint16_t sent;
 	struct Tx_Circle_Queue * next;
 };
-
+//----------------functions to be used-----------------
 void SCI1_Start(void);
 MD_STATUS SCI1_Serial_Send(uint8_t * const tx_buf, uint16_t tx_num);
 MD_STATUS SCI1_Serial_Receive(uint8_t * rx_buf, uint16_t rx_num);
@@ -343,8 +344,8 @@ void SCI5_Start(void);
 MD_STATUS SCI5_Serial_Send(uint8_t * const tx_buf, uint16_t tx_num);
 MD_STATUS SCI5_Serial_Receive(uint8_t * rx_buf, uint16_t rx_num);
 uint16_t sci5_receive_available(void);
-void SCI5_Send_string(uint8_t * const tx_buf);
 void debug_text(unsigned char * sendtext );
-void uart_5_printf(unsigned char *,const char *format, ...);
+void uart_5_printf(const char *format, ...);
+//                       ---end---
 /* End user code. Do not edit comment generated here */
 #endif

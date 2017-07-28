@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  reset_program.c                        */
 /*      DESCRIPTION  :  Reset program                          */
 /*      CPU SERIES   :  RX200                                  */

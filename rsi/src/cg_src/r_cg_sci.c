@@ -14,16 +14,16 @@
 * following link:
 * http://www.renesas.com/disclaimer
 *
-* Copyright (C) 2015 Renesas Electronics Corporation. All rights reserved.
+* Copyright (C) 2015, 2016 Renesas Electronics Corporation. All rights reserved.
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 * File Name    : r_cg_sci.c
-* Version      : Code Generator for RX23T V1.00.01.01 [30 Oct 2015]
+* Version      : Code Generator for RX23T V1.00.04.02 [29 Nov 2016]
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for SCI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/7/8
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -39,6 +39,7 @@ Includes
 #include "r_cg_sci.h"
 /* Start user code for include. Do not edit comment generated here */
 #include "stdlib.h"
+#include "stdio.h"
 #include "string.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -90,7 +91,7 @@ void R_SCI1_Create(void)
     MSTP(SCI1) = 0U;
 
     /* Set interrupt priority */
-    IPR(SCI1, ERI1) = _0F_SCI_PRIORITY_LEVEL15;
+    IPR(SCI1, ERI1) = _0E_SCI_PRIORITY_LEVEL14;
 
     /* Clear the control register */
     SCI1.SCR.BYTE = 0x00U;
@@ -103,8 +104,8 @@ void R_SCI1_Create(void)
     SCI1.SPMR.BYTE = _00_SCI_RTS | _00_SCI_CLOCK_NOT_INVERTED | _00_SCI_CLOCK_NOT_DELAYED;
 
     /* Set control registers */
-    SCI1.SMR.BYTE = _00_SCI_CLOCK_PCLK | _00_SCI_STOP_1 | _00_SCI_PARITY_EVEN | _00_SCI_PARITY_DISABLE | 
-                    _00_SCI_DATA_LENGTH_8 | _00_SCI_MULTI_PROCESSOR_DISABLE | _00_SCI_ASYNCHRONOUS_MODE;
+    SCI1.SMR.BYTE = _00_SCI_CLOCK_PCLK | _00_SCI_STOP_1 | _00_SCI_PARITY_DISABLE | _00_SCI_DATA_LENGTH_8 | 
+                    _00_SCI_MULTI_PROCESSOR_DISABLE | _00_SCI_ASYNCHRONOUS_MODE;
     SCI1.SCMR.BYTE = _00_SCI_SERIAL_MODE | _00_SCI_DATA_INVERT_NONE | _00_SCI_DATA_LSB_FIRST | 
                      _10_SCI_DATA_LENGTH_8_OR_7 | _62_SCI_SCMR_DEFAULT;
     SCI1.SEMR.BYTE = _00_SCI_LOW_LEVEL_START_BIT | _00_SCI_NOISE_FILTER_DISABLE | _10_SCI_8_BASE_CLOCK | 
@@ -236,7 +237,7 @@ void R_SCI5_Create(void)
     MSTP(SCI5) = 0U;
 
     /* Set interrupt priority */
-    IPR(SCI5, ERI5) = _0F_SCI_PRIORITY_LEVEL15;
+    IPR(SCI5, ERI5) = _0A_SCI_PRIORITY_LEVEL10;
 
     /* Clear the control register */
     SCI5.SCR.BYTE = 0x00U;
@@ -249,8 +250,8 @@ void R_SCI5_Create(void)
     SCI5.SPMR.BYTE = _00_SCI_RTS | _00_SCI_CLOCK_NOT_INVERTED | _00_SCI_CLOCK_NOT_DELAYED;
 
     /* Set control registers */
-    SCI5.SMR.BYTE = _00_SCI_CLOCK_PCLK | _00_SCI_STOP_1 | _00_SCI_PARITY_EVEN | _00_SCI_PARITY_DISABLE | 
-                    _00_SCI_DATA_LENGTH_8 | _00_SCI_MULTI_PROCESSOR_DISABLE | _00_SCI_ASYNCHRONOUS_MODE;
+    SCI5.SMR.BYTE = _00_SCI_CLOCK_PCLK | _00_SCI_STOP_1 | _00_SCI_PARITY_DISABLE | _00_SCI_DATA_LENGTH_8 | 
+                    _00_SCI_MULTI_PROCESSOR_DISABLE | _00_SCI_ASYNCHRONOUS_MODE;
     SCI5.SCMR.BYTE = _00_SCI_SERIAL_MODE | _00_SCI_DATA_INVERT_NONE | _00_SCI_DATA_LSB_FIRST | 
                      _10_SCI_DATA_LENGTH_8_OR_7 | _62_SCI_SCMR_DEFAULT;
     SCI5.SEMR.BYTE = _00_SCI_LOW_LEVEL_START_BIT | _00_SCI_NOISE_FILTER_DISABLE | _10_SCI_8_BASE_CLOCK | 
@@ -260,14 +261,14 @@ void R_SCI5_Create(void)
     SCI5.BRR = 0x2AU;
 
     /* Set RXD5 pin */
-    MPC.PB1PFS.BYTE = 0x0AU;
-    PORTB.PMR.BYTE |= 0x02U;
+    MPC.PB6PFS.BYTE = 0x0AU;
+    PORTB.PMR.BYTE |= 0x40U;
 
     /* Set TXD5 pin */
-    MPC.PB2PFS.BYTE = 0x0AU;
-    PORTB.PODR.BYTE |= 0x04U;
-    PORTB.PDR.BYTE |= 0x04U;
-    PORTB.PMR.BYTE |= 0x04U;
+    MPC.PB5PFS.BYTE = 0x0AU;
+    PORTB.PODR.BYTE |= 0x20U;
+    PORTB.PDR.BYTE |= 0x20U;
+    PORTB.PMR.BYTE |= 0x20U;
 }
 /***********************************************************************************************************************
 * Function Name: R_SCI5_Start
@@ -296,7 +297,7 @@ void R_SCI5_Start(void)
 void R_SCI5_Stop(void)
 {
     /* Set TXD5 pin */
-    PORTB.PMR.BYTE &= 0xFBU;
+    PORTB.PMR.BYTE &= 0xDFU;
     SCI5.SCR.BIT.TE = 0U;      /* Disable serial transmit */
     SCI5.SCR.BIT.RE = 0U;      /* Disable serial receive */
 
@@ -363,7 +364,7 @@ MD_STATUS R_SCI5_Serial_Send(uint8_t * const tx_buf, uint16_t tx_num)
         g_sci5_tx_count = tx_num;
 
         /* Set TXD5 pin */
-        PORTB.PMR.BYTE |= 0x04U;
+        PORTB.PMR.BYTE |= 0x20U;
         SCI5.SCR.BIT.TIE = 1U;
         SCI5.SCR.BIT.TE = 1U;
     }
@@ -557,21 +558,6 @@ void SCI5_Start(void)
 	SCI5.SCR.BIT.RIE = 1U;
 	SCI5.SCR.BIT.RE = 1U;
 }
-
-void SCI5_Send_string(uint8_t * const tx_buf)
-{
-	SCI5_Serial_Send(tx_buf, strlen(tx_buf));
-}
-
-void  uart_5_printf(unsigned char * returndata,const unsigned char *format,...){
-	va_list ap;
-	va_start(ap,format);
-
-	vsprintf(returndata,format,ap);
-	//debug_text(print_list);
-	va_end(ap);
-
-}
 void debug_text(unsigned char * sendtext ){
 	int length=0;
 	unsigned char * text=sendtext;
@@ -581,4 +567,15 @@ void debug_text(unsigned char * sendtext ){
 	}
 	SCI5_Serial_Send(sendtext,length);
 }
+
+void uart_5_printf(const unsigned char *format,...){
+	va_list ap;
+	unsigned char print_list[256];
+	va_start(ap,format);
+
+	vsprintf(print_list,format,ap);
+	debug_text(print_list);
+	va_end(ap);
+}
+
 /* End user code. Do not edit comment generated here */

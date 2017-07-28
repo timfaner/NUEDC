@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  vector_table.c                         */
 /*      DESCRIPTION  :  Vector Table                           */
 /*      CPU SERIES   :  RX200                                  */

@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  stacksct.h                             */
 /*      DESCRIPTION  :  Setting of Stack area                  */
 /*      CPU SERIES   :  RX200                                  */

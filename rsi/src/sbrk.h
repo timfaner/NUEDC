@@ -1,6 +1,6 @@
 /***************************************************************/
 /*                                                             */
-/*      PROJECT NAME :  renesas_control_7_22                   */
+/*      PROJECT NAME :  PIX_UART_7_17                          */
 /*      FILE         :  sbrk.h                                 */
 /*      DESCRIPTION  :  Header file of sbrk file               */
 /*      CPU SERIES   :  RX200                                  */
