@@ -33,7 +33,10 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     unsigned char temp[11]={0};
     unsigned char current_time_str[12]={0};
     int i;
-    
+    //避免序列中出现 \x00
+    if(send_counter == 0)
+        send_counter++;
+
     package =  (uint8_t*)malloc(arg_count + 25);
 
     for(i=0;i<arg_count+25;i++){
@@ -79,6 +82,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     package = NULL;
     free(arg_str);
     arg_str = NULL;
+    
     send_counter++;
 }
 
