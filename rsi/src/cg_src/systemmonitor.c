@@ -114,7 +114,10 @@ void systemEventUpdate(uint16_t new_event){
     system_event |= new_event;
     package[0] =(uint8_t) (system_event & 0xff);
     package[1] =(uint8_t) ((system_event>>8) & 0xff);
-    systemMonitor(package,2,MONITOR_EVENT);
+    if(package[1]== 0)
+        systemMonitor(package,1,MONITOR_EVENT);
+    else
+        systemMonitor(package,2,MONITOR_EVENT);
 }
 
 void systemErrorUpdate(uint8_t error){
