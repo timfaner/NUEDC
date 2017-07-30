@@ -6,6 +6,14 @@ the configuration is complete. All the graph updating takes place in updateGraph
 cfg1={\
     'MONITOR_ERROR':1,\
     'MONITOR_EVENT':2,\
+    'DATA_OPENMV':  			 97,\
+    'DATA_X_OFFSET_RESULT': 	 98,\
+    'DATA_Y_OFFSET_RESULT': 	 99,\
+    'DATA_PID_X_SPEED': 		 100,\
+    'DATA_PID_Y_SPEED':		     101,\
+    'DATA_ATTITUDE': 			 102,\
+    'DATA_PID_PARAMETERS':	 	 103,\
+    'DATA_TASK_NUMBER':          104\
 }
 
 cfg_line_to_data = {
@@ -20,25 +28,40 @@ cfg_line_to_data = {
     0:0
 }
 cfg_data = {
-    'TASKNUMBER':1,\
-    'PID_X':2,\
-    'PID_Y':3,\
-    'MAV_X':4,\
-    'MAV_Y':5,\
-    'PITCH':6,\
-    'YAW':7,\
-    'ROW':8,\
-    'params_pid':9\
+    'DATA_OPENMV':  			 97,\
+    'DATA_X_OFFSET_RESULT': 	 98,\
+    'DATA_Y_OFFSET_RESULT': 	 99,\
+    'DATA_PID_X_SPEED': 		 100,\
+    'DATA_PID_Y_SPEED':		     101,\
+    'DATA_ATTITUDE': 			 102,\
+    'DATA_PID_PARAMETERS':	 	 103,\
+    'DATA_TASK_NUMBER':          104\
 }
 cfg_event ={\
-    'Standby':0,\
-    'ENEVT_BOOTIP':1,\
-    'EVENT_SHTH':2
+    'BOOTUP' 			:1,\
+    'STARTBUTTON' 		:2,\
+    'NOLOCALPOSITION' 	:4,\
+    'ARMCHECK' 			:8,\
+    'TAKEOFF' 			:16,\
+    'OPENMVBOOTUP' 		:32,\
+    'TRACKING' 			:64,\
+    'LOSTLINE'			:128,\
+    'PRELAND' 			:256,\
+    'LANDING' 			:512,\
+    'LANDED'  			:1024,\
+    'OVERFLY' 			:2048,\
+    'TASK1' 			:4096,\
+    'TASK2' 			:8192,\
+    'TASK3' 			:16384,\
+    'TASK4' 			:32768\
     }
 
 cfg_error ={\
-    'ERROR_sth':1,\
-    'EVENT_SHTH':2
+    'ERROR_TASK_NUMBER':		 65,\
+    'ERROR_SPI_DATA': 	  		 66,\
+    'ERROR_UNKNOWN_PLACE': 	     67,\
+    'ERROR_CANNOT_GET_DATA': 	 68,\
+    'ERROR_WRONG_ORDER': 		 69,\
     }
 
 def dictOp(cfg,itemss):
@@ -156,8 +179,8 @@ class GraphFrame(ttk.Frame):
         
         self.root.graphstr_y = tk.StringVar(self,value = '0,0,0,0,0,0,0\n')
         self.root.graphstr_x = tk.StringVar(self,value = '0,0,0,0,0,0,0\n')
-        statrbtn = ttk.Button(self.root,text = 'Start',command = self.startpro,bg = 'blue')
-        stopbtn = ttk.Button(self.root,text = "Stop",command = self.stoppro,bg = 'red')
+        statrbtn = ttk.Button(self.root,text = 'Start',command = self.startpro)
+        stopbtn = ttk.Button(self.root,text = "Stop",command = self.stoppro)
         
 
         
@@ -192,14 +215,17 @@ class GraphFrame(ttk.Frame):
         new_event_list = ['Standby']
         if self.root.variables['log2file'] == 'on':
             self.f = open(self.root.variables['filename'], 'w') 
-            self.f.write('Use Parser  To Parse\n')
         while ( self.stop_flag != 1 ):
             try:
-
+                self.root.linenumber = IntVar(self,value = 0)
                 self.rsa.setStream(self.root.ser.readline())
                 #获取buff长度
                 bufflen = serialqueue(self.root.ser)
                 self.root.variables['buffsize'].set(value=str(bufflen)) 
+
+                self.rsa_time.set(int(rsa.getTime()))
+
+
                 if self.rsa.getType() == cfg1['MONITOR_EVENT']:
                     self.rsa_event.set(self.rsa.getData())
                 elif self.rsa.getType() == cfg1['MONITOR_ERROR']:
@@ -207,58 +233,65 @@ class GraphFrame(ttk.Frame):
                 else:
                     self.rsa_data.set(self.rsa.getData())
                     p1 = p2 = p3 = p4 = p5 = p6 = p7 = '0'
-                    pp1 = pp2 = pp3 = pp4 = pp5 = pp6 = pp7 = 0
-                    if( dictOp(cfg_data,self.rsa.getType()) == 'PID_X'):
+                    
+                    if( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_X_SPEED'):
                         p1 = str(self.rsa.getData())
-                        pp1 = str(self.rsa.getTime())
-                        self.root.linenumber = 0
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'PID_Y'):
-                        p2 = str(self.rsa.getData())
-                        pp2 = str(self.rsa.getTime())
-                        self.root.linenumber = 1
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'OPENMV_X'):
-                        p3 = str(self.rsa.getData())
-                        pp3 = str(self.rsa.getTime())
-                        self.root.linenumber = 2
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'OPENMV_Y'):
-                        p4 = str(self.rsa.getData())
-                        pp4 = str(self.rsa.getTime())
-                        self.root.linenumber = 3
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'PITCH'):
-                        p5 = str(self.rsa.getData())
-                        pp5 = str(self.rsa.getTime())
-                        self.root.linenumber = 4
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'YAW'):
-                        p6 = str(self.rsa.getData())
-                        pp6 = str(self.rsa.getTime())
-                        self.root.linenumber = 5
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'ROW'):
-                        p7 = str(self.rsa.getData())
-                        pp7 = int(self.rsa.getTime())
-                        self.root.linenumber = 6
-                    elif( dictOp(cfg_data,self.rsa.getType()) == 'params_pid'):
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        
+                        self.root.linenumber.set(0)
+                        
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_Y_SPEED'):
+                        p2 = str(self.rsa.getData()[0])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(1)
+                        
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_X_OFFSET_RESULT'):
+                        p3 = str(self.rsa.getData()[0])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(2)
+                        
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_Y_OFFSET_RESULT'):
+                        p4 = str(self.rsa.getData()[0])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(3)
+                        
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_ATTITUDE'):
+                        #pitch
+                        p5 = str(self.rsa.getData()[0])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(4)
+                        #yaw
+                        p6 = str(self.rsa.getData()[1])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(5)
+                        #row
+                        p7 = str(self.rsa.getData()[2])
+                        self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                        self.root.linenumber.set(6)
+                        
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_PARAMETERS'):
                         self.root.rsa_params[0].set = self.rsa.getData()[0]
                         self.root.rsa_params[1].set = self.rsa.getData()[1]
                         self.root.rsa_params[2].set = self.rsa.getData()[2]
-
-                    self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
-                    self.root.graphstr_x.set([pp1,pp2,pp3,pp4,pp5,pp6,pp7])
-                self.rsa_time.set(int(rsa.getTime()))
+                
+                
                 self.rsa_interval.set(rsa.getInterval())
 
                 if self.root.variables['log2file'] == 'on':
-                    self.templog = dictOp(cfg1,self.rsa.getType()) +'\x0b'+ str(self.rsa.getTime()) + '\x0b'\
-                     +  str(self.rsa.getData()) + '\n'
+                    self.templog = self.rsa.getType() +'\x0b'+self.rsa_time.get()+'\x0b'\
+                     +  self.rsa.getData() + '\n'
                     self.f.write(self.templog)
 
             except :
-                messagebox.showerror(message='Start Failed..') + self.rsa.getType()
+                messagebox.showerror(message='Start Failed..')
                 self.stop_flag = 1
 
     def stoppro(self):
         self.stop_flag = 1
-        
-        self.root.ser.close()
+        if self.root.variables['log2file'] == 'on': 
+            if not self.f:
+                self.f.close()
+
     def openSerial(self):
         #Set up the relationship between what the user enters and what the API calls for
         bytedic = {'5':serial.FIVEBITS,
@@ -288,7 +321,7 @@ class GraphFrame(ttk.Frame):
         else:
             first_space = self.root.variables['COMport'].index(' ')
             port = self.root.variables['COMport'][0:first_space].strip()
-            # Parameters necessary due to https://github.com/pyserial/pyserial/issues/59
+            # Parameters necessary due to https:github.com/pyserial/pyserial/issues/59
             self.root.ser = serial.Serial(\
                 port=port,\
                 baudrate=str(self.root.variables['baud']),\
@@ -323,13 +356,14 @@ class MAVStatus(ttk.LabelFrame):
         ttk.LabelFrame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root  
-
+        timelb = tk.Label(self,textvariable = str(self.root.rsa_time))
         lf1 = Event(self,self.root,text = 'Event',)
         lf2 = Data(self,self.root,text = 'Data')
         lf3 = Error(self,self.root,text = 'Error')
-        lf1.grid(row = 0,column = 0,sticky = 'n',padx = 7,pady = 10)
-        lf2.grid(row = 1,column = 0,sticky = 'n',padx = 7,pady = 10)
-        lf3.grid(row = 2,column = 0,sticky = 'n',padx = 7,pady = 10)
+        timelb.grid(row = 0,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf1.grid(row = 1,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf2.grid(row = 2,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf3.grid(row = 3,column = 0,sticky = 'n',padx = 7,pady = 10)
         
         
 class Event(ttk.LabelFrame):
@@ -699,7 +733,7 @@ class Graph(ttk.Frame):
                         self.xxx[i] = self.xxx[i][k+1:]
                 self.xxx[i].append(0)
                 rrrr[i]=len(self.xxx[i])
-        self.cccount == max(rrrr)
+        self.cccount = max(rrrr)
     
     def updateGraph(self, frameNum, *args, **kwargs):
         #Find how much stuff is in the serial buffer and update the status bar
@@ -779,7 +813,7 @@ class Graph(ttk.Frame):
             
 
         #Now the data set is current we can update the graphs    
-        self.updataGraph_x(self.root.rsa_time,self.root.linenumber)                          
+        self.updataGraph_x(self.root.rsa_time,self.root.linenumber.get())                          
         for line in range(len(self.root.lines)):
             datapos = self.root.lineDataPos[line] - 1
             ydata = self.root.data[datapos]

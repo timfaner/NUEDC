@@ -112,5 +112,6 @@ User definitions
 #define DATA_PID_Y_SPEED		 101
 #define DATA_ATTITUDE 			 102
 #define DATA_PID_PARAMETERS	 	 103
+#define DATA_TASK_NUMBER         104
 /* End user code. Do not edit comment generated here */
 #endif
