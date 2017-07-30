@@ -48,6 +48,9 @@ User definitions
 #define RSA_TASK_SWICH1 		PORT7.PIDR.BIT.B6
 #define RSA_TASK_SWICH2 		PORT7.PIDR.BIT.B5
 
+/*****************const define****************/
+#define Pi 3.1416
+
 /***************task flag*******************/
 #define TASK1  1
 #define TASK2  2
@@ -69,20 +72,45 @@ User definitions
 #define MAV_STATUS_ERROR 255
 
 //define system envet
-#define EVENT_BOOTUP 1
-#define EVENT_STARTBUTTON 2
-#define EVENT_ARMCHECK 4
-#define EVENT_TAKEOFF 8
-#define EVENT_OPENMVBOOTUP 16
+#define EVENT_BOOTUP 			1
+#define EVENT_STARTBUTTON 		2
+#define EVENT_NOLOCALPOSITION 	4
+#define EVENT_ARMCHECK 			8
+#define EVENT_TAKEOFF 			16
+#define EVENT_OPENMVBOOTUP 		32
+//#define EVENT_TRACKING 			64
+//#define EVENT_LOSTLINE			128
+//#define EVENT_PRELAND 			256
+//#define EVENT_LANDING 			512
+//#define EVENT_LANDED  			1024
+//#define EVENT_OVERFLY 			2048
+//#define EVENT_TASK1 			4096
+//#define EVENT_TASK2 			8192
+//#define EVENT_TASK3 			16384
+//#define EVENT_TASK4 			32768
+
 
 #define EVENT_XUNXIAN 1
 #define EVENT_PRELAND 1
 #define EVENT_OVERFLY 1
 #define EVENT_LAND 1
 #define EVENT_LANDED 1
+
+
 //define system error
-#define ERROR_TASK_NUMBER 1
+#define ERROR_TASK_NUMBER		 65
+#define ERROR_SPI_DATA 	  		 66
+#define ERROR_UNKNOWN_PLACE 	 67
+#define ERROR_CANNOT_GET_DATA 	 68
+#define ERROR_WRONG_ORDER  		 69
 
-
+//define systerm data
+#define DATA_OPENMV  			 97
+#define DATA_X_OFFSET_RESULT 	 98
+#define DATA_Y_OFFSET_RESULT 	 99
+#define DATA_PID_X_SPEED 		 100
+#define DATA_PID_Y_SPEED		 101
+#define DATA_ATTITUDE 			 102
+#define DATA_PID_PARAMETERS	 	 103
 /* End user code. Do not edit comment generated here */
 #endif
