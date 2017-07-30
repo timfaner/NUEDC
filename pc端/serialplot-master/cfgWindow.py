@@ -25,6 +25,7 @@ import pprint
 from defaults import defaults
 import os
 
+
 class ConfigFrame(ttk.Frame):
     """
     Main application Frame. Houses all the individual objects (classes) that
@@ -253,8 +254,7 @@ class SerialTab(ttk.Frame):
         stopbitsbox.grid(row=3, column=2,  padx=5)
         paritylabel.grid(row=4, column = 1,  padx=5)
         paritybox.grid(row=4, column=2,  padx=5)
-
-
+        
 class DataTab(ttk.Frame):
     """
     Houses configuration for the incoming data
@@ -271,56 +271,44 @@ class DataTab(ttk.Frame):
         self.numgraphslist = list(range(1,4))
         
         #How long is the data coming in?
-        datalabel = ttk.Label(self, text='Variables per line')
-        databox = ttk.Combobox(self, width=8, values = self.datalist, \
-                        textvariable=self.controller.TKvariables['datalength'])
-        CreateToolTip(datalabel,\
-        "The numbder of variables per line. "
-        "A line is a series of variables seperated by a comma, and terminated by a \\n character. "
-        "For example, the line: data1, data2, data3\\n would have 3 variables. "
-        "All data recieved must be a string, no binary numbers allowed")
+             
+
         
-        maxlabel = ttk.Label(self, text='Max Message Length')
-        maxbox = ttk.Entry(self, width=11, \
-            textvariable=self.controller.TKvariables['maxlength'])
-        CreateToolTip(maxlabel, \
-        'The maximum length of one line (in characters). If anything '
-        'be conservative with this number, err on the high side. The program reads '
-        'lines from the serial buffer until it is below this number of characters, to avoid '
-        'a condition where it tries to read a line out of the serial buffer and a \\n '
-        "can't be found"
-        )
-        
-        numgraphslabel = ttk.Label(self, text='Number of graphs')
+        numgraphslabel = ttk.Label(self, text='图表数量')
         numgraphsbox = ttk.Combobox(self, width=8, values=self.numgraphslist, \
             textvariable=self.controller.TKvariables['numgraphs'])
         numgraphsbox.bind('<<ComboboxSelected>>', self.parent.updateGraphs)
         CreateToolTip(numgraphslabel,\
-        "The number of graphs to plot data on")
+        "图表示的数量,每个图能画三条线,根据需要选择")
         
-        maxcheck = ttk.Checkbutton(self, text='Start Maximized?', \
+        maxcheck = ttk.Checkbutton(self, text='开始最大化?', \
         variable=self.controller.TKvariables['startmax'], \
             onvalue='yes', offvalue='no')
         CreateToolTip(maxcheck, \
-        "When the graph is started, the window will be maximized.")
+        "开始最大化,方便调试")
             
-        log2filecheck = ttk.Checkbutton(self, text='Log to file?',\
+        log2filecheck = ttk.Checkbutton(self, text='是否开启日志',\
             variable=self.controller.TKvariables['log2file'], onvalue='on', \
             offvalue='off', command=self.controller.getfilename)
         CreateToolTip(log2filecheck, \
-        "If checked, all data recieved will also be logged to a CSV file")
+        "选中即表示需要记录日志，日志解析需要用phaserpy")
         
+        datalabel = ttk.Label(self, text='Time expired')
+        databox = ttk.Entry(self, width=10, textvariable=self.controller.TKvariables['timelength'])
+        datapostlbl = ttk.Label(self, text='ms')        
+        CreateToolTip(datalabel, \
+        '绘图中容纳的时间长度 单位毫秒')
+
         AObutton = ttk.Button(self, text='Advanced Options', command=self.AObutton)
                                     
-        datalabel.grid(row=1, column = 1, sticky='w')
-        databox.grid(row=1, column = 2, sticky='w', padx=7)
-        maxlabel.grid(row=2, column=1, sticky='w')
-        maxbox.grid(row=2, column=2, sticky='w', padx=7)
-        numgraphslabel.grid(row=3, column=1, sticky='w')
-        numgraphsbox.grid(row=3, column=2, sticky='w', padx=7)
-        maxcheck.grid(row=4, column=1, columnspan=2, sticky='w')
-        log2filecheck.grid(row=5, column=1, columnspan=2, sticky='w')
-        AObutton.grid(row=6, column=1, columnspan=2, sticky='ew')
+        datalabel.grid(row=1, column=1, sticky='w')
+        databox.grid(row=1, column=2, sticky='w', padx=7)
+        datapostlbl.grid(row=1, column=3, sticky='w') 
+        numgraphslabel.grid(row=2, column=1, sticky='w')
+        numgraphsbox.grid(row=2, column=2, sticky='w', padx=7)
+        maxcheck.grid(row=3, column=1, columnspan=2, sticky='w')
+        log2filecheck.grid(row=4, column=1, columnspan=2, sticky='w')
+        AObutton.grid(row=5, column=1, columnspan=2, sticky='ew')
         
     def AObutton(self):
         toplvl = tk.Toplevel()
@@ -331,15 +319,7 @@ class DataTab(ttk.Frame):
         TKvars = self.controller.TKvariables
         
         #Data Depth
-        datalabel = ttk.Label(frame, text='Data History Depth')
-        databox = ttk.Entry(frame, width=boxwidth, textvariable=TKvars['datadepth'])
-        datapostlbl = ttk.Label(frame, text='Lines')
-        datalabel.grid(row=0, column=0, sticky='e')
-        databox.grid(row=0, column=1, sticky='ew', padx=boxpadx)
-        datapostlbl.grid(row=0, column=2, sticky='w')         
-        CreateToolTip(datalabel, \
-        'How many lines of data to plot on the x axis. More = longer history '
-        'displayed on the screen')
+        
 
         #Refresh Frequency
         refreshlabel = ttk.Label(frame, text='Refresh Frequency')
@@ -447,8 +427,8 @@ class GraphTab(ttk.Frame):
         color3 = self.controller.TKvariables[key3][2]        
         
         #Create 3 comboboxes to select up to 3 datas to plot
-        data1label = ttk.Label(self, text='Data 1 position in string')
-        self.data1box = ttk.Combobox(self, width=3, values=self.controller.datalist, \
+        data1label = ttk.Label(self, text='Line1 Stand For:')
+        self.data1box = ttk.Combobox(self, width=6, values=self.controller.datalist, \
                         textvariable=data1, postcommand=self.updatecblist)            
         data1color = tk.Button(self, bg=color1.get(), width=1,\
             command=lambda:self.setcolor(data1color,1,1,color1))
@@ -456,8 +436,8 @@ class GraphTab(ttk.Frame):
         "The position of the first value to plot in the incoming line. It is one indexed, so "
         "the first value is in position 1")
         
-        data2label = ttk.Label(self, text='Data 2 position in string')
-        self.data2box = ttk.Combobox(self, width=3, values=self.controller.datalist, \
+        data2label = ttk.Label(self, text='Line2 Stand For:')
+        self.data2box = ttk.Combobox(self, width=6, values=self.controller.datalist, \
                         textvariable=data2, postcommand=self.updatecblist)
         data2color = tk.Button(self, bg=color2.get(), width=1,\
             command=lambda:self.setcolor(data2color,1,2,color2))                                    
@@ -465,8 +445,8 @@ class GraphTab(ttk.Frame):
         "The position of the second value in the incoming line. It is one indexed, so "
         "the first value is in position 1")       
         
-        data3label = ttk.Label(self, text='Data 3 position in string')
-        self.data3box = ttk.Combobox(self, width=3, values=self.controller.datalist, \
+        data3label = ttk.Label(self, text='Line3 Stand For:')
+        self.data3box = ttk.Combobox(self, width=6, values=self.controller.datalist, \
                         textvariable=data3, postcommand=self.updatecblist)
         data3color = tk.Button(self, bg=color3.get(), width=1,\
             command=lambda:self.setcolor(data3color,1,3,color3))                        
@@ -503,7 +483,7 @@ class GraphTab(ttk.Frame):
         
     def updatecblist(self):
         num_vars = int(self.controller.TKvariables['datalength'].get())
-        self.controller.datalist = list(range(1,num_vars+1))
+        self.controller.datalist = ['PID_X','PID_Y','MV_X','MV_Y','Pitch','Yaw','Row']
         self.controller.datalist.insert(0, '-')        
         self.data1box['values'] = self.controller.datalist
         self.data2box['values'] = self.controller.datalist

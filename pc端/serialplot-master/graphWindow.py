@@ -3,6 +3,56 @@ The GraphTopLevel is a ttk.Frame class that gets packd into the root window when
 the configuration is complete. All the graph updating takes place in updateGraph
 '''
 
+cfg1={\
+    'MONITOR_ERROR':1,\
+    'MONITOR_EVENT':2,\
+}
+
+cfg_line_to_data = {
+    'PID_X':1,\
+    'PID_Y':2,\
+    'MV_X':3,\
+    'MV_Y':4,\
+    'Pitch':5,\
+    'Yaw':6,\
+    'Row':7,\
+    '-':'-',\
+    0:0
+}
+cfg_data = {
+    'TASKNUMBER':1,\
+    'PID_X':2,\
+    'PID_Y':3,\
+    'MAV_X':4,\
+    'MAV_Y':5,\
+    'PITCH':6,\
+    'YAW':7,\
+    'ROW':8,\
+    'params_pid':9\
+}
+cfg_event ={\
+    'Standby':0,\
+    'ENEVT_BOOTIP':1,\
+    'EVENT_SHTH':2
+    }
+
+cfg_error ={\
+    'ERROR_sth':1,\
+    'EVENT_SHTH':2
+    }
+
+def dictOp(cfg,itemss):
+    temp = -1
+    for key in cfg:
+        if cfg[key] == itemss:
+            temp = key
+    if(key == -1):
+        return 'Dictnotfound'
+    else:
+        return key
+
+
+from threading import Timer
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
@@ -26,6 +76,8 @@ else:
     from tkinter import ttk
     from tkinter import messagebox    
     serialqueue = serial.Serial.inWaiting    
+
+
 
 
 class GraphTopLevel:
@@ -54,20 +106,22 @@ class GraphTopLevel:
         self.root.update()
         scrwidth = self.root.winfo_screenwidth()
         scrheight = self.root.winfo_screenheight()
-        winwidth = 1100
-        winheight = 1000
+        winwidth = 850
+        winheight = 500
+        
         winposx = int(round(scrwidth/2 - winwidth/2))
         winposy = int(round(scrheight/2 - winheight/2))
         self.root.geometry('{}x{}+{}+{}'.format(winwidth, winheight, winposx, winposy))
         self.root.deiconify()
-
+        self.root.config(background = 'white')
         if self.root.variables['startmax'] == 'yes':        
             #Maximize the window by default
             self.root.state('zoomed')  
 
         #Add the GraphFrame, which contains all the widgets we want
         self.GraphFrm = GraphFrame(self.root, self.root)
-        self.GraphFrm.pack(fill='both', expand=True)            
+        #self.GraphFrm.pack(fill='both', expand=True) 
+        self.root.resizable(width = False,height = False)
         
         #Change the function of the X button on the upper right hand corner - 
         #Make it call a function which closes the serial port and then closes
@@ -88,184 +142,123 @@ class GraphFrame(ttk.Frame):
         self.root.count = 0     #the number of lines we've recieved
         self.root.starttime = 0 #time when we started      
         
-        StatusBar(self, self.root).pack(fill='x', side='bottom')        
-        Graph(self, self.root).pack(fill='both', expand=True, side='top')
+        self.rsa = RSA_STATUS()
+        self.root.rsa_data = tk.StringVar(self,value = 'Null')
+        self.root.rsa_type = tk.StringVar(self,value = 'Null')
+        self.root.rsa_time = tk.IntVar(self,value = 0)
+        self.root.rsa_event = tk.IntVar(self,value = 0)
+        self.root.rsa_params = []
+        self.root.rsa_params = [tk.StringVar(self,value = 'p'),tk.StringVar(self,value = 'i'),\
+                                tk.StringVar(self,value = 'd'),tk.StringVar(self,value = 'task')]
+        self.root.rsa_error =  tk.StringVar(self,value = 'No Error')
         
-    def close_prog(self):
-        #Close the serial port
-        self.root.ser.close()
+        self.root.rsa_interval =tk.StringVar(self,value = 'Null')
         
-        #Close the log file if it's open
-        if self.root.variables['log2file'] == 'on': 
-            if not self.root.logfile.closed:
-                self.root.logfile.close()
-            
-        #Destroy the root
-        self.root.destroy()
+        self.root.graphstr_y = tk.StringVar(self,value = '0,0,0,0,0,0,0\n')
+        self.root.graphstr_x = tk.StringVar(self,value = '0,0,0,0,0,0,0\n')
+        statrbtn = ttk.Button(self.root,text = 'Start',command = self.startpro,bg = 'blue')
+        stopbtn = ttk.Button(self.root,text = "Stop",command = self.stoppro,bg = 'red')
+        
 
         
-class Graph(ttk.Frame):
-    def __init__(self, parent, root):
-        ttk.Frame.__init__(self, parent)
-        self.parent = parent
-        self.root = root                
+        #tk.grid_rowconfigure(1,minisize = 10)
+        statrbtn.grid(row = 0,column = 0) 
+        stopbtn.grid(row = 0,column = 1) 
+        MAVStatus(self.root, self.root,text = 'Mav_staus',height = 800).grid(row = 1,columnspan =2)
+        Graph(self.root, self.root).grid(row = 0,column = 2,sticky = 's',rowspan = 2) 
+        StatusBar(self.root, self.root).grid(row = 2,column = 0,columnspan = 3,sticky = 's')
 
-        #Create the figure object to put all the axes in        
-        self.root.f = Figure(facecolor='white')
+        self.openSerial()   
         
-        #Create an empty dictionary to store the axis handles in
-        self.root.ax = {}
-        numgraphs = int(self.root.variables['numgraphs'])
+    def Test(self):
+        self.root.test.set('teeeee')
         
-        #Based on the number of graphs we want, create the axis objects
-        for ax in range(1,numgraphs + 1):
-            #This creates a dictionary, with the keys being character axis
-            #number (ie '1', '2', etc)
-        
-            key = 'g'+str(ax)+'ylims'
-            datadepth = int(self.root.variables['datadepth'])
-            
-            for lim in range(len(self.root.variables[key])):
-                    self.root.variables[key][lim] = int(self.root.variables[key][lim])
-                    
-            lims = self.root.variables[key]
-            
-            self.root.ax[str(ax)] = self.root.f.add_subplot(numgraphs, 1, ax)
-            self.root.ax[str(ax)].set_ylim(lims)
-            self.root.ax[str(ax)].set_xlim([-datadepth, 0])
-            self.root.ax[str(ax)].grid(True)
-            self.root.ax[str(ax)].tick_params(axis='both', labelsize=16)
-            
-        #Create an empty list to store line objects in. The position in the list
-        #is also the line number
-        self.root.lines = []
-        
-        #Create an empty list to store the data position for each line
-        self.root.lineDataPos = []
 
-        #Create a list of multiplier and offsets, with position corrilating to 
-        #the position of the data it will be applied to. e.g. [data1, data2]
-        #would have [[multiplier1, offset,], [multiplier2, offset2]]
-        self.root.dataMultOff = []
         
-        #Create a list to store all the data
-        self.root.data = []
-        for column in range(0, int(self.root.variables['datalength'])):
-            self.root.data.append([])
-            #Default to a multiplier of 1, offset of zero
-            self.root.dataMultOff.append([1, 0])
+    def startpro(self):
+        self.templog = ''
         
-        #Set up the multiplier and offsets
-        for data in range(len(self.root.data)):
-            #Find if a line uses this data
-            for key in self.root.variables:
-                #If it does, set the position in the dataMultOff equal to
-                #The multipliers in the variable       
-                if key[0:5] == 'graph' and self.root.variables[key][1] != '-':
-                    position = int(self.root.variables[key][1]) - 1
-                else:
-                    position = -1
-                    
-                if position == data:
-                    multiplier = float(self.root.variables[key][4])
-                    offset = float(self.root.variables[key][5])
-                    datalbl = self.root.variables[key][0]
-                    self.root.dataMultOff[data] = [multiplier, offset, datalbl]
-            
-        #Sort they keys, so we are always ascending
-        keylst = sorted(list(self.root.variables.keys()))
-        
-        #Run through the variables and add only the lines and datapositions
-        #we're using
-        for key in keylst:
-            if (key[0:5] == 'graph') and (self.root.variables[key][1] != '-'):
-                #If the key is graph info AND there is a data position there, store it
-                #in the arrays we created above
-                graph = int(key[5])
-                #linenum = int(key[10])
-                datapos = int(self.root.variables[key][1])   
-                
-                #Add a line only if we have this number of graphs
-                if int(self.root.variables['numgraphs']) >= graph:                   
-                    self.root.lineDataPos.append(datapos)
-                
-                    #Add an empty line to the graph
-                    l, = self.root.ax[str(graph)].plot([], [],\
-                        color=      self.root.variables[key][2],
-                        linestyle=  self.root.variables[key][3],
-                        label=      self.root.variables[key][0],)
-                    self.root.lines.append(l)   
-
-        #Create the legends
-        for ax in range(1,numgraphs + 1):
-            handles, labels = self.root.ax[str(ax)].get_legend_handles_labels()
-            self.root.ax[str(ax)].legend(handles=handles, loc='upper left')
-            
-        #Configure and open the serial port
-        self.openSerial()
-
-        #TODO: For some unknown reason, when running serialplot.py on windows
-        #with python3, the program freezes at canvas.show(). However,
-        #(This is the weird part) if the graphwindow.py or configwindow.py is
-        #run first, which in turn calls serialplot.py, there is no issue and it
-        #runs fine. Odd.
-   
-        #Create the initial axis objects and show the figure
-        canvas = FigureCanvasTkAgg(self.root.f, master=self)  
-        canvas.show()
-        canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
-      
-        #Start the timer for estimated update frequency
-        time.clock()      
-        
-        #If we're recording to a csv, open it
+        if(self.root.ser.isOpen()):
+            if float(serial.VERSION[0:3]) < 3:
+                serial.Serial.flushInput(self.root.ser)
+                serial.Serial.flushOutput(self.root.ser)
+            else:
+                #Otherwise we're using pySerial 3.x
+                serial.Serial.reset_input_buffer(self.root.ser)
+                serial.Serial.reset_output_buffer(self.root.ser)
+        else:
+            self.openSerial()
+        self.stop_flag = 0
+        new_event_list = ['Standby']
         if self.root.variables['log2file'] == 'on':
-            self.root.tmplog = ''
-            self.root.prevlogtime = time.clock()
-            #open and close the file in write mode so if it already exsists, 
-            #delete the contents.
-            f = open(self.root.variables['filename'], 'w')   
-            
-            #Write a header to the file so we know what gets plotted
-            msg = ''
-            for data in range(len(self.root.data)):
-                try:
-                    msg += self.root.dataMultOff[data][2] + ','
-                except:
-                    msg += ','
-            f.write(msg)
-            f.close()
-                        
-            #write headers so we know what the data is
+            self.f = open(self.root.variables['filename'], 'w') 
+            self.f.write('Use Parser  To Parse\n')
+        while ( self.stop_flag != 1 ):
+            try:
 
-        #Set up the graph update routine
-        updatefreq = float(self.root.variables['refreshfreq']) #Hz 
-        interval = int((1/updatefreq)*1000)
+                self.rsa.setStream(self.root.ser.readline())
+                #获取buff长度
+                bufflen = serialqueue(self.root.ser)
+                self.root.variables['buffsize'].set(value=str(bufflen)) 
+                if self.rsa.getType() == cfg1['MONITOR_EVENT']:
+                    self.rsa_event.set(self.rsa.getData())
+                elif self.rsa.getType() == cfg1['MONITOR_ERROR']:
+                    self.rsa_error.set(dictOp(cfg_error,self.rsa.getData()))
+                else:
+                    self.rsa_data.set(self.rsa.getData())
+                    p1 = p2 = p3 = p4 = p5 = p6 = p7 = '0'
+                    pp1 = pp2 = pp3 = pp4 = pp5 = pp6 = pp7 = 0
+                    if( dictOp(cfg_data,self.rsa.getType()) == 'PID_X'):
+                        p1 = str(self.rsa.getData())
+                        pp1 = str(self.rsa.getTime())
+                        self.root.linenumber = 0
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'PID_Y'):
+                        p2 = str(self.rsa.getData())
+                        pp2 = str(self.rsa.getTime())
+                        self.root.linenumber = 1
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'OPENMV_X'):
+                        p3 = str(self.rsa.getData())
+                        pp3 = str(self.rsa.getTime())
+                        self.root.linenumber = 2
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'OPENMV_Y'):
+                        p4 = str(self.rsa.getData())
+                        pp4 = str(self.rsa.getTime())
+                        self.root.linenumber = 3
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'PITCH'):
+                        p5 = str(self.rsa.getData())
+                        pp5 = str(self.rsa.getTime())
+                        self.root.linenumber = 4
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'YAW'):
+                        p6 = str(self.rsa.getData())
+                        pp6 = str(self.rsa.getTime())
+                        self.root.linenumber = 5
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'ROW'):
+                        p7 = str(self.rsa.getData())
+                        pp7 = int(self.rsa.getTime())
+                        self.root.linenumber = 6
+                    elif( dictOp(cfg_data,self.rsa.getType()) == 'params_pid'):
+                        self.root.rsa_params[0].set = self.rsa.getData()[0]
+                        self.root.rsa_params[1].set = self.rsa.getData()[1]
+                        self.root.rsa_params[2].set = self.rsa.getData()[2]
+
+                    self.root.graphstr_y.set(p1+','+p2+','+p3+','+p4+','+p5+','+p6+','+p7+'\n')
+                    self.root.graphstr_x.set([pp1,pp2,pp3,pp4,pp5,pp6,pp7])
+                self.rsa_time.set(int(rsa.getTime()))
+                self.rsa_interval.set(rsa.getInterval())
+
+                if self.root.variables['log2file'] == 'on':
+                    self.templog = dictOp(cfg1,self.rsa.getType()) +'\x0b'+ str(self.rsa.getTime()) + '\x0b'\
+                     +  str(self.rsa.getData()) + '\n'
+                    self.f.write(self.templog)
+
+            except :
+                messagebox.showerror(message='Start Failed..') + self.rsa.getType()
+                self.stop_flag = 1
+
+    def stoppro(self):
+        self.stop_flag = 1
         
-              
-        
-        try:
-            self.root.ani = animation.FuncAnimation(self.root.f, self.updateGraph,\
-                init_func=self.init_func, interval=interval, blit=True)
-        except:
-            messagebox.showerror(message='Issue starting animation')
-
-        #Apply tight layout to reduce wasted space        
-        self.root.f.tight_layout()
-
-        #If this line isn't in here the graph shows up choppy for some reason
-        #TODO Figure out why this shows up so choppy unless the window is resized 
-        #This line fixed the problem previously, but after updating matplotlib
-        #It ceased to fix it
-        self.root.f.canvas.show()        
-        
-        
-    def init_func(self):
-        for line in self.root.lines:
-            line.set_data([], [])     
-        return self.root.lines
-
-
+        self.root.ser.close()
     def openSerial(self):
         #Set up the relationship between what the user enters and what the API calls for
         bytedic = {'5':serial.FIVEBITS,
@@ -313,102 +306,110 @@ class Graph(ttk.Frame):
             serial.Serial.reset_output_buffer(self.root.ser)
             
             
-    def updateGraph(self, frameNum, *args, **kwargs):
-        #Find how much stuff is in the serial buffer and update the status bar
-        bufflen = serialqueue(self.root.ser)
-        self.root.variables['buffsize'].set(value=str(bufflen))      
+    def close_prog(self):
+        #Close the serial port
+        self.root.ser.close()
         
-        #While the serial buffer lenght is greater than the threshold, read out
-        #the buffer until we're below the threshold
-        while int(serialqueue(self.root.ser)) >= int(self.root.variables['maxlength']):
-            #Read a line
-            val = self.root.ser.readline().decode('utf-8')
-            val = val.replace('\n', '')
-            val = val.replace('\r', '')
-                
-            #parse it, store it in a list
-            val_list = val.split(',')
+        #Close the log file if it's open
+        if self.root.variables['log2file'] == 'on': 
+            if not self.f:
+                self.f.close()
             
-            #If the line isn't what we're expecting, discard it. It's a partial line.
-            if len(val_list) != int(self.root.variables['datalength']):
-                val_list = []
-            
-            #I had issues with some garbage making it into the serial buffer
-            #and causing issues with the animation - solution is to check it
-            #first
-            for variable in range(len(val_list)):
-                try:
-                    tmp = int(val_list[variable])
-                    multiplier = self.root.dataMultOff[variable][0]
-                    offset = self.root.dataMultOff[variable][1]
-                    val_list[variable] = tmp*multiplier + offset
-                except:
-                    val_list = []
-                    break
-                
-            #Reconstruct the original string after we've applied the multipliers
-            val_display_width = int(self.root.variables['stsbrwdth']) #characters
-            val = val_display = ''
-            for value in val_list:
-                if value != val_list[len(val_list)-1]:
-                    disp_len = len('{:.1f}'.format(round(value, 1)))
-                    val_display += ' '*(val_display_width - disp_len) + \
-                        '{:.1f}'.format(round(value, 1)) + ','
-                    val += str(value)
-                    val += ','
-                else:
-                    disp_len = len('{:.1f}'.format(round(value, 1)))
-                    val_display += ' '*(val_display_width - disp_len) + \
-                        '{:.1f}'.format(round(value, 1))                   
-                    val += str(value)
-            
-            #Update the CSV once a second so we're not constantly opening and closing it
-            if self.root.variables['log2file'] == 'on':    
-            
-                self.root.tmplog += val + '\n'
+        #Destroy the root
+        self.root.destroy()
 
-                if time.clock() >= self.root.prevlogtime + 1:
-                    self.root.prevlogtime = time.clock()
-                    self.root.logfile = open(self.root.variables['filename'], 'a')
-                    self.root.logfile.write(self.root.tmplog)
-                    self.root.logfile.close()
-                    self.root.tmplog = ''
-           
-            for variable in range(len(val_list)):
-                #If the list is greater than datadepth, remove the first row
-                if len(self.root.data[variable]) > int(self.root.variables['datadepth']):
-                    self.root.data[variable].pop(0)
-                #Append the new data to the end
-                self.root.data[variable].append(val_list[variable])         
+class MAVStatus(ttk.LabelFrame):
+    def __init__(self, parent, root,**kw):
+        ttk.LabelFrame.__init__(self, parent,**kw)
+        self.parent = parent
+        self.root = root  
 
-            #Update the estimated update rate            
-            self.root.count += 1
-            
-            #If this is the last line we're going to read, update the status bar             
-            if int(self.root.variables['maxlength']) >= int(serialqueue(self.root.ser)):
-               
-                self.root.variables['lastline'].set(value=val_display)
-                
-                #Update the estimated frequency we're recieving data at
-                self.root.variables['refreshrate'].set(\
-                    value='{:.1f}'.format(round(self.root.count/time.clock(), 1)))
-
-                #If we're recording everything to a spreadsheet, 
-                #write the temp list to the spreadsheet
-     
-        #Now the data set is current we can update the graphs                              
-        for line in range(len(self.root.lines)):
-            datapos = self.root.lineDataPos[line] - 1
-            ydata = self.root.data[datapos]
-            xdata = range(-len(ydata), 0)
-            self.root.lines[line].set_data(xdata, ydata)
+        lf1 = Event(self,self.root,text = 'Event',)
+        lf2 = Data(self,self.root,text = 'Data')
+        lf3 = Error(self,self.root,text = 'Error')
+        lf1.grid(row = 0,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf2.grid(row = 1,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf3.grid(row = 2,column = 0,sticky = 'n',padx = 7,pady = 10)
         
-        return self.root.lines
-
         
+class Event(ttk.LabelFrame):
+    def __init__(self, parent, root,**kw):
+        ttk.LabelFrame.__init__(self, parent,**kw)
+        self.parent = parent
+        self.root = root
+        self.new_event_number = self.old_event_number = 0
+        self.new_event = self.old_event = []
+        self.l1 = tk.LabelFrame(self,text = 'Current')
+        self.l2 = tk.LabelFrame(self,text = 'Past')
+        self.l1.pack(side = 'left')
+        self.l2.pack(side = 'right')
+
+        self.root.rsa_event.trace('w',self.eventcallback)
+        self.m1 = tk.Label(self.l1,text = 'Standby').pack()
+        self.m1 = tk.Label(self.l2,text = 'Standby').pack()
+        if len(self.new_event) > 1:
+            self.root.rsa_error.set('Event Queue Wrong')
+        
+    def eventcallback(*arg):
+        self.enentDataHandle(self.root.rsa_event.get())
+    def enentDataHandle(number):
+        self.old_event = self.new_event
+        self.new_event = []
+        self.old_event_number = self.new_event_number
+        self.new_event_number = number
+        self.diff = self.old_event_number^self.new_event_number
+        for bit in range(16):
+            self.new_event.append(dictOp(cfg_event,self.diff & pow(2,bit)))
+        self.m1.config(text = self.new_event)
+        self.m2.config(text = self.old_event)
+class Data(ttk.LabelFrame):
+    def __init__(self, parent, root,**kw):
+        ttk.LabelFrame.__init__(self, parent,**kw)
+        self.parent = parent
+        self.root = root
+        self.l1 = tk.LabelFrame(self,text = 'Task Numeber')
+        self.l1.pack(pady = 6,padx = 5)
+        self.l2 = tk.Label(self.l1,textvariable =self.root.rsa_params[3])
+        self.l2.pack(fill = 'both')
+        self.pidlb = tk.LabelFrame(self,text = 'pid params')
+        self.pidlb.pack(pady = 6,padx = 5)
+        self.n1 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[0])
+        self.n2 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[1])
+        self.n3 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[2])
+        self.n1.grid(row = 0,padx = 5,pady = 5)
+        self.n2.grid(row = 0,column  = 1,padx = 5,pady = 5)
+        self.n3.grid(row = 0,column  = 2,padx = 5,pady = 5)
+        
+
+class Error(ttk.LabelFrame):
+    def __init__(self, parent, root,**kw):
+        ttk.LabelFrame.__init__(self, parent,**kw)
+        
+        self.parent = parent
+        self.root = root     
+        self.root.rsa_error.trace('w',self.labelBlink)
+        self.l2 = tk.Label(self,textvariable = self.root.rsa_error)
+        self.l2.pack(fill ='both')
+        self.l2.bind('<Button-1>',self.reseeet)
+        
+    def labelBlink(self):
+        self.a = Timer(0.1,self.labelBlink2)
+        a.start()
+        self.l2.config(background = 'yellow')
+
+    
+
+    def labelBlink(self):
+        self.l2.config(background = 'red')
+    def reseeet(self):
+        self.l2.config(background = 'white')
+        
+
+
+
 class StatusBar(ttk.Frame):
-    def __init__(self, parent, root):
-        ttk.Frame.__init__(self, parent)
+    def __init__(self, parent, root,**kw):
+        ttk.Frame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root
         self['borderwidth'] = 2
@@ -480,6 +481,312 @@ class StatusBar(ttk.Frame):
         #messagebox.showinfo(message=str(serial.Serial.inWaiting(self.root.ser)))
         #messagebox.showinfo(message=self.root.ani)
         
+
+
+class RSA_STATUS:
+    def __init__(self):
+        self.old_pkg_count = 0      
+        self.pkg_cnt = 0
+        self.systime = 0
+        self.systime_old = 0
+    
+    def setStream(self,serial_stream):
+        self.stream = serial_stream
+        self.__spacepos = self.stream.find(32)
+        self.systime_raw = self.stream[0:self.__spacepos]
+
+        self.systime_old = self.systime
+        self.systime = int((self.systime_raw).decode('ascii'))
+
+        self.old_pkg_count = self.pkg_cnt
+        self.pkg_cnt = self.stream[self.__spacepos+1]
+
+        self.type = self.stream[self.__spacepos+2]
+
+        self.data_raw = self.stream[self.__spacepos+3:self.stream.find(10)]
+        
+        if(self.type == cfg1['MONITOR_EVENT']):
+            if(len(self.data_raw)==2):
+                self.data = self.data_raw[1]<<8 | self.data_raw[0]
+            else:
+                self.data = self.data_raw[0]
+        elif(self.type == cfg1['MONITOR_ERROR']):
+            self.data = self.data_raw
+        else:
+            if self.data_raw.decode('ascii').find(',') == -1 :#数据中没有‘，’
+                self.data = self.data_raw.decode('ascii')
+            else:
+                self.data = self.data_raw.decode('ascii').split(',')
+            for r in range(len(self.data)):
+                self.data[r] = float(self.data[r])
+        
+    def check(self):
+        if(self.old_pkg_count == self.pkg_cnt) or (self.old_pkg_count == self.pkg_cnt-254):
+            return True
+        else:
+            return False
+
+    def getInterval(self):
+        return  self.systime -self.systime_old
+
+    def getData(self):
+        return self.data
+    def getType(self):
+        return self.type
+    def getTime(self):
+        return  self.systime
+
 #If this script is executed, just run the main script
+
+
+class Graph(ttk.Frame):
+
+    def __init__(self, parent, root,**kw):
+        ttk.Frame.__init__(self, parent,**kw)
+        self.parent = parent
+        self.root = root                
+        self.xxx = []
+        #Create the figure object to put all the axes in        
+        self.root.f = Figure(facecolor='white')
+        
+        #Create an empty dictionary to store the axis handles in
+        self.root.ax = {}
+        numgraphs = int(self.root.variables['numgraphs'])
+        
+        #Based on the number of graphs we want, create the axis objects
+        for ax in range(1,numgraphs + 1):
+            #This creates a dictionary, with the keys being character axis
+            #number (ie '1', '2', etc)
+        
+            key = 'g'+str(ax)+'ylims'
+            timelength = int(self.root.variables['timelength'])
+            
+            for lim in range(len(self.root.variables[key])):
+                    self.root.variables[key][lim] = int(self.root.variables[key][lim])
+                    
+            lims = self.root.variables[key]
+            
+            self.root.ax[str(ax)] = self.root.f.add_subplot(numgraphs, 1, ax)
+            self.root.ax[str(ax)].set_ylim(lims)
+            self.root.ax[str(ax)].set_xlim([-timelength, 0])
+            self.root.ax[str(ax)].grid(True)
+            self.root.ax[str(ax)].tick_params(axis='both', labelsize=16)
+            
+        #Create an empty list to store line objects in. The position in the list
+        #is also the line number
+        self.root.lines = []
+        
+        #Create an empty list to store the data position for each line
+        self.root.lineDataPos = []
+
+        #Create a list of multiplier and offsets, with position corrilating to 
+        #the position of the data it will be applied to. e.g. [data1, data2]
+        #would have [[multiplier1, offset,], [multiplier2, offset2]]
+        self.root.dataMultOff = []
+        
+        #Create a list to store all the data
+        self.root.data = []
+        for column in range(0, int(self.root.variables['datalength'])):
+            self.root.data.append([])
+            #Default to a multiplier of 1, offset of zero
+            self.root.dataMultOff.append([1, 0])
+            self.xxx.append([0])
+        #Set up the multiplier and offsets
+        for data in range(len(self.root.data)):
+            #Find if a line uses this data
+            for key in self.root.variables:
+                #If it does, set the position in the dataMultOff equal to
+                #The multipliers in the variable       
+                if key[0:5] == 'graph' and cfg_line_to_data[self.root.variables[key][1]] != '-':
+                    position = int(cfg_line_to_data[self.root.variables[key][1]]) - 1
+                else:
+                    position = -1
+                    
+                if position == data:
+                    multiplier = float(self.root.variables[key][4])
+                    offset = float(self.root.variables[key][5])
+                    datalbl = self.root.variables[key][0]
+                    self.root.dataMultOff[data] = [multiplier, offset, datalbl]
+            
+        #Sort they keys, so we are always ascending
+        keylst = sorted(list(self.root.variables.keys()))
+        
+        #Run through the variables and add only the lines and datapositions
+        #we're using
+        for key in keylst:
+            if (key[0:5] == 'graph') and (cfg_line_to_data[self.root.variables[key][1]] != '-'):
+                #If the key is graph info AND there is a data position there, store it
+                #in the arrays we created above
+                graph = int(key[5])
+                #linenum = int(key[10])
+                datapos = int(cfg_line_to_data[self.root.variables[key][1]])   
+                
+                #Add a line only if we have this number of graphs
+                if int(self.root.variables['numgraphs']) >= graph:                   
+                    self.root.lineDataPos.append(datapos)
+                
+                    #Add an empty line to the graph
+                    l, = self.root.ax[str(graph)].plot([], [],\
+                        color=      self.root.variables[key][2],
+                        linestyle=  self.root.variables[key][3],
+                        label=      self.root.variables[key][0],)
+                    self.root.lines.append(l)   
+
+        #Create the legends
+        for ax in range(1,numgraphs + 1):
+            handles, labels = self.root.ax[str(ax)].get_legend_handles_labels()
+            self.root.ax[str(ax)].legend(handles=handles, loc='upper left')
+            
+        #Configure and open the serial port
+        
+
+        #TODO: For some unknown reason, when running serialplot.py on windows
+        #with python3, the program freezes at canvas.show(). However,
+        #(This is the weird part) if the graphwindow.py or configwindow.py is
+        #run first, which in turn calls serialplot.py, there is no issue and it
+        #runs fine. Odd.
+   
+        #Create the initial axis objects and show the figure
+        canvas = FigureCanvasTkAgg(self.root.f, master=self)  
+        canvas.show()
+        canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
+      
+        #Start the timer for estimated update frequency
+        time.clock()      
+        
+        
+                    
+            #write headers so we know what the data is
+
+        #Set up the graph update routine
+        updatefreq = float(self.root.variables['refreshfreq']) #Hz 
+        interval = int((1/updatefreq)*1000)
+        self.root.graphstr_x.trace('w',self.dataUpdataCallback) 
+              
+        
+        try:
+            self.root.ani = animation.FuncAnimation(self.root.f, self.updateGraph,\
+                init_func=self.init_func, interval=interval, blit=True)
+        except:
+            messagebox.showerror(message='Issue starting animation')
+
+        #Apply tight layout to reduce wasted space        
+        self.root.f.tight_layout()
+
+        #If this line isn't in here the graph shows up choppy for some reason
+        #TODO Figure out why this shows up so choppy unless the window is resized 
+        #This line fixed the problem previously, but after updating matplotlib
+        #It ceased to fix it
+        self.root.f.canvas.show()        
+        
+        
+    def init_func(self):
+        for line in self.root.lines:
+            line.set_data([], [])     
+        return self.root.lines
+
+    def dataUpdataCallback(*arg):
+        self.updataGraph(self,2)
+    def updataGraph_x(self,currenttime,linenumber):
+        rrrr = []
+        for i in range(len(self.root.lines)):
+            rrrr[i] = 0
+            if(linenuumber == i):
+                for k in range(len(self.xxx[i])):
+                    self.xxx[i][k] = self.xxx[i][k] - currenttime
+                for k in range(len(self.xxx[i])):
+                    if(self.xxx[i][k] < -int(self.root.variables['timelength'])): #最早的点与现在的点相距大于8s则删掉大于8s的点
+                        self.xxx[i] = self.xxx[i][k+1:]
+                self.xxx[i].append(0)
+                rrrr[i]=len(self.xxx[i])
+        self.cccount == max(rrrr)
+    
+    def updateGraph(self, frameNum, *args, **kwargs):
+        #Find how much stuff is in the serial buffer and update the status bar
+        bufflen = serialqueue(self.root.ser)
+        self.root.variables['buffsize'].set(value=str(bufflen))  
+            
+        
+        #While the serial buffer lenght is greater than the threshold, read out
+        #the buffer until we're below the threshold
+        if 1==1:
+            
+            #Read a line
+            val = self.root.graphstr_y.get()
+            val = val.replace('\n', '')
+            val = val.replace('\r', '')
+                
+            #parse it, store it in a list
+            val_list = val.split(',')
+            
+            #If the line isn't what we're expecting, discard it. It's a partial line.
+            if len(val_list) != int(self.root.variables['datalength']):
+                val_list = []
+            
+            #I had issues with some garbage making it into the serial buffer
+            #and causing issues with the animation - solution is to check it
+            #first
+            for variable in range(len(val_list)):
+                try:
+                    tmp = int(val_list[variable])
+                    multiplier = self.root.dataMultOff[variable][0]
+                    offset = self.root.dataMultOff[variable][1]
+                    val_list[variable] = tmp*multiplier + offset
+                except:
+                    val_list = []
+                    break
+                
+            #Reconstruct the original string after we've applied the multipliers
+            val_display_width = int(self.root.variables['stsbrwdth']) #characters
+            val = val_display = ''
+            for value in val_list:
+                if value != val_list[len(val_list)-1]:
+                    disp_len = len('{:.1f}'.format(round(value, 1)))
+                    val_display += ' '*(val_display_width - disp_len) + \
+                        '{:.1f}'.format(round(value, 1)) + ','
+                    val += str(value)
+                    val += ','
+                else:
+                    disp_len = len('{:.1f}'.format(round(value, 1)))
+                    val_display += ' '*(val_display_width - disp_len) + \
+                        '{:.1f}'.format(round(value, 1))                   
+                    val += str(value)
+            
+            
+           
+            for variable in range(len(val_list)):
+                #If the list is greater than timelength, remove the first row
+                if (len(self.root.data[variable]) > self.cccount):
+                    self.root.data[variable].pop(0)
+                #Append the new data to the end
+                self.root.data[variable].append(val_list[variable])         
+
+            #Update the estimated update rate            
+            self.root.count += 1
+            
+            #If this is the last line we're going to read, update the status bar             
+            if 1:
+               
+                self.root.variables['lastline'].set(value=val_display)
+                
+                #Update the estimated frequency we're recieving data at
+                self.root.variables['refreshrate'].set(\
+                    value='{:.1f}'.format(round(self.root.count/time.clock(), 1)))
+
+                #If we're recording everything to a spreadsheet, 
+                #write the temp list to the spreadsheet
+
+            
+
+        #Now the data set is current we can update the graphs    
+        self.updataGraph_x(self.root.rsa_time,self.root.linenumber)                          
+        for line in range(len(self.root.lines)):
+            datapos = self.root.lineDataPos[line] - 1
+            ydata = self.root.data[datapos]
+            xdata = self.xxx[line]
+            self.root.lines[line].set_data(xdata, ydata)
+        
+        return self.root.lines
+
 if __name__ == '__main__':
     os.system("serialplot.py")

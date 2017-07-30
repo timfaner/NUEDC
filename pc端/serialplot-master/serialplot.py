@@ -12,7 +12,7 @@ from cfgWindow import *
 root = tk.Tk()
 
 #Hide the window so we can't see it jump to the middle
-root.withdraw()
+#root.withdraw()
 
 #Add the configuration frame to the root
 root.CfgFrm = ConfigFrame(root)
@@ -32,10 +32,10 @@ root.geometry('{}x{}+{}+{}'.format(winwidth, winheight, winposx, winposy))
 root.title('Serial Plotter Configuration')
 if os.name == 'nt':
     root.iconbitmap(default='graphs.ico')
-root.resizable(width=False, height=False)
+root.resizable(width=True, height=True)
 
 #Unhide the window now that it's configured
-root.deiconify()
+#root.deiconify()
 
 #Run the mainloop. All the other code is executed in class __init__ or event bindings
 root.mainloop()
