@@ -115,7 +115,11 @@ void systemDataUpdate(float *data,int data_count,uint8_t data_type){
 void systemEventUpdate(uint16_t new_event){
     uint8_t package[2];
     
-    system_event |= new_event;
+    if (system_event & new_event == 0)
+      system_event |= new_event;
+    else 
+      system_event ^= new_event;
+    
     package[0] =(uint8_t) (system_event & 0xff);
     package[1] =(uint8_t) ((system_event>>8) & 0xff);
     if(package[1]== 0)
