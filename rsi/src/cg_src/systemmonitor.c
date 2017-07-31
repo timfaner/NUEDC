@@ -50,7 +50,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     *(arg_str+arg_count) = '\0';
     
     
-    current_time = millis();
+    current_time = millis()+3;
     sprintf(current_time_str,"%lu",current_time);
     
 
