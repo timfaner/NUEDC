@@ -40,6 +40,7 @@ Includes
 #include "r_cg_cmt.h"
 #include "r_cg_sci.h"
 #include "r_cg_rspi.h"
+#include "r_cg_port.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -67,6 +68,7 @@ void R_Systeminit(void)
 
     /* Set peripheral settings */
     R_CGC_Create();
+    R_PORT_Create();
     R_CMT2_Create();
     R_CMT3_Create();
     R_SCI1_Create();
