@@ -92,7 +92,7 @@ void systemDataUpdate(float *data,int data_count,uint8_t data_type){
     unsigned char send[50]={0} ;
     int i = 0;
 
-    int length;
+    int length =0; //记得初始化
     unsigned char * text = send;
     char comma[2] = ",";
     
@@ -115,7 +115,7 @@ void systemDataUpdate(float *data,int data_count,uint8_t data_type){
 void systemEventUpdate(uint16_t new_event){
     uint8_t package[2];
     
-    if (system_event & new_event == 0)
+    if ((system_event & new_event) == 0)
       system_event |= new_event;
     else 
       system_event ^= new_event;
