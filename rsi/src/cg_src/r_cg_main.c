@@ -98,7 +98,6 @@ int run_count=0;
 
 /* End user code. Do not edit comment generated here */
 
-
 void R_MAIN_UserInit(void);
 /***********************************************************************************************************************
 * Function Name: main
@@ -109,20 +108,16 @@ void R_MAIN_UserInit(void);
 void main(void)
 {
 	int task_number = 0;
-
+//	float task[7] = {4.0, 5.0, 6.34, 6.789, 1.234, 2.4, 4.567};
     /* Start user code. Do not edit comment generated here */
 	//initial
 	R_MAIN_UserInit();
     //get data from openmv
 	spiReceive(rx_buffer);
 
-	systemEventUpdate(EVENT_BOOTUP);
 
-	uart_5_printf("error flag %d  ",openmv_data[ERROR_FLAG]);
-	uart_5_printf("mav status %d\n",openmv_data[MAV_STATUS]);
-	delay_ms(100);
     /* Start user code. Do not edit comment generated here */
-/*    task_number = rasTaskSwitch();
+    task_number = rasTaskSwitch();
     rasCmdToOpenmv(task_number); //切换openmv任务
 	systemMonitor(&task_number,1,MONITOR_DATA_TASK_NUMBER);
 
@@ -163,7 +158,7 @@ void main(void)
     		break;
     	case -1:
     		break;
-    }	*/
+    }
     /* End user code. Do not edit comment generated here */
 }
 /***********************************************************************************************************************

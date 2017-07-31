@@ -39,6 +39,7 @@ Includes
 #include "r_cg_cgc.h"
 #include "r_cg_cmt.h"
 #include "r_cg_sci.h"
+#include "r_cg_rspi.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -70,6 +71,7 @@ void R_Systeminit(void)
     R_CMT3_Create();
     R_SCI1_Create();
     R_SCI5_Create();
+    R_RSPI0_Create();
 
     /* Disable writing to MPC pin function control registers */
     MPC.PWPR.BIT.PFSWE = 0U;    
