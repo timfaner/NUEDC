@@ -38,10 +38,11 @@ void PID(double* Input, double* Output, double* Setpoint,
  *   myPid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/ 
-int Compute(void)
+int Compute(double * Input)
 {
 	unsigned long now,timeChange;
    if(!myPid.inAuto) return false;
+   myPid.myInput = Input;
    now = millis();
    timeChange = (now - myPid.lastTime);
    if(timeChange>=myPid.SampleTime)

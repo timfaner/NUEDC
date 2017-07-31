@@ -38,7 +38,7 @@ struct PID
 
 void PID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection);
-int Compute(void);
+int Compute(double * Input);
 int Comput(void);
 void SetTunings(double Kp, double Ki, double Kd);
 void SetSampleTime(int NewSampleTime);

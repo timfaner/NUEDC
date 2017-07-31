@@ -40,12 +40,12 @@ Includes
 #include "r_cg_cmt.h"
 #include "r_cg_sci.h"
 /* Start user code for include. Do not edit comment generated here */
-#include "pid_speed.h"
-#include "pid.h"
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
 #include "math.h"
+
+#include "pid.h"
 #include "systemmonitor.h"
 #include "offset_calculate.h"
 /* End user code. Do not edit comment generated here */
@@ -55,11 +55,6 @@ Includes
 Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
-
-/******************************************/
-/*********Renesas get PIX attiaude*********/
-//volatile float ** ras_get_pix_attitude;
-/******************************************/
 
 /*************spi parameters**********************/
 uint8_t rx_data[9];
@@ -71,12 +66,10 @@ volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
 
 volatile uint16_t system_event;
 volatile uint8_t system_error_code;
-/******************************************/
-/***************pid parameters*************/
-#define x_target 60
-#define y_target 80
-float *Kp, *Ki, *Kd;
-/******************************************/
+
+/*********pid parameters********/
+double input= 0.0, output, setpoint=0.0;
+double kp=5.0, ki=6.0, kd=3.0;
 
 /***************functions******************/
 void task1(void);
@@ -115,47 +108,21 @@ void R_MAIN_UserInit(void);
 ***********************************************************************************************************************/
 void main(void)
 {
-
-	/*********pid parameters********/
-	double input, output, setpoint=0.0;
-	double kp=5.0, ki=6.0, kd=3.0;
-	uint8_t x_offset1=163, y_offset=80;
-	float x_offset2=0.0, y_offset2=0.0;
-//	char * float_data;
-
 	int task_number = 0;
-
 
     /* Start user code. Do not edit comment generated here */
 	//initial
 	R_MAIN_UserInit();
     //get data from openmv
 	spiReceive(rx_buffer);
-while(1){
 
-	/************pid init*************/
-	y_offset2 = rasY_offsetCalculate(x_offset1);
-	input = 20; // y_offset2;
-	PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
-	SetMode(AUTOMATIC);
+	systemEventUpdate(EVENT_BOOTUP);
 
-//	x_offset2 = rasAngleCalculate(162.71);
-//	x_offset2 = atan(1.00);
-	/**************pid start**********/
-	Compute();
-
-	debug_text("Xoffset1: ");
-	uart_5_printf("%d ", x_offset1);
-	debug_text("Y_offset2: ");
-	uart_5_printf("%f ", y_offset2);
-	debug_text("speed: ");
-	uart_5_printf("%f\n", output);
+	uart_5_printf("error flag %d  ",openmv_data[ERROR_FLAG]);
+	uart_5_printf("mav status %d\n",openmv_data[MAV_STATUS]);
 	delay_ms(100);
-	}
-//	systemEventUpdate(EVENT_BOOTUP);
-
     /* Start user code. Do not edit comment generated here */
- /*   task_number = rasTaskSwitch();
+/*    task_number = rasTaskSwitch();
     rasCmdToOpenmv(task_number); //切换openmv任务
 	systemMonitor(&task_number,1,MONITOR_DATA_TASK_NUMBER);
 
@@ -166,7 +133,6 @@ while(1){
 	systemEventUpdate(EVENT_STARTBUTTON);
 
 	//倒计时
-
 	armcheck();
 	systemEventUpdate(EVENT_ARMCHECK);
 		mav_takeoff(1.0);
@@ -180,6 +146,7 @@ while(1){
 	systemEventUpdate(EVENT_OPENMVBOOTUP);
 	delay_ms(100);  //wait openmv initialize
 
+	debug_text("openmv initialized");
 
     switch (task_number){
     	case TASK1:
@@ -196,7 +163,7 @@ while(1){
     		break;
     	case -1:
     		break;
-    }  */
+    }	*/
     /* End user code. Do not edit comment generated here */
 }
 /***********************************************************************************************************************
@@ -212,12 +179,17 @@ void R_MAIN_UserInit(void)
 	SCI5_Start();
 	R_CMT2_Start();
 	R_CMT3_Start();
+	R_RSPI0_Start();
 	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
 	flag_data_updated=getFlagDataUpdated();
 	apm_attitude=getAttitude();
 	wait_link();
 
 	debug_text("\nRx Initialized\n");
+
+
+	PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
+	SetMode(AUTOMATIC);
     /* End user code. Do not edit comment generated here */
 }
 
@@ -250,14 +222,17 @@ void task1(void)
 {
 	int land_mark = 0;
 	float x_offset, y_offset, x_speed, y_speed;
+	debug_text("\nworking task1\n");
 	while(1){
 		//if(land_ma=rk == landed)break;
-
+		uart_5_printf("error flag %d  ",openmv_data[ERROR_FLAG]);
+		uart_5_printf("mav status %d\n",openmv_data[MAV_STATUS]);
+		delay_ms(100);
 		if(openmv_data[ERROR_FLAG] == 0)
 		{
+			debug_text("error_flag = 0");
 			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-
-			if(openmv_data[LAND_FLAG] !=1){ //寮€濮嬮檷钀?
+			if(openmv_data[LAND_FLAG] !=1){
 				systemEventUpdate(EVENT_LAND);
 //				mav_land();
 				// while(land_mark != LANDED){
@@ -265,7 +240,7 @@ void task1(void)
 				// 	and updata EVENT_LANDED
 				// }
 			}
-			else{ //闄嶈惤鍓嶇殑璋冩暣
+			else{ debug_text(" mav status");
 				switch (openmv_data[MAV_STATUS]){
 					case MAV_STATUS_INIT:
 						break;
@@ -274,10 +249,12 @@ void task1(void)
 						//dataFushion();
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-//						PID(y_offset, y_speed, 0.23, 0.24, 0.33, REVERSE);
-//						y_speed = pid_start(y_target, y_offset);
+						input = y_offset;
+						Compute(&input);
+						y_speed = output;
 						//send to apm
 						set_vel(0.0, y_speed, 0.0);
+						uart_5_printf("\ntake off %f\n", y_speed);
 						delay_ms(200);
 						break;
 					case MAV_STATUS_FLYING:
@@ -285,7 +262,9 @@ void task1(void)
 						//dataFushion();
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-						y_speed = pid_start(y_target, y_offset);
+						input = y_offset;
+						Compute(&input);
+						y_speed = output;
 						//send to apm
 						set_vel(0.0, y_speed, 0.0);
 						delay_ms(200);
@@ -296,8 +275,14 @@ void task1(void)
 						x_offset = rasX_offsetCalculate(openmv_data[3]);
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-						x_speed = pid_start(x_target, x_offset);
-						y_speed = pid_start(y_target, y_offset);
+						input = y_offset;
+						Compute(&input);
+						y_speed = output;
+
+						input = x_offset;
+						PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
+						Compute(&input);
+						x_speed = output;
 						//send to apm
 						set_vel(x_speed, y_speed, 0.0);
 						delay_ms(200);
