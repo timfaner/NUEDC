@@ -88,7 +88,7 @@ int Comput(void)
     if(timeChange>=myPid.SampleTime)
     {
       /*Compute all the working error variables*/
-		SCI5_Serial_Send(&sci_send, 1);
+//		SCI5_Serial_Send(&sci_send, 1);
     while(sci5_receive_available() > 0)
     {
     SCI5_Serial_Receive(&data.s[i], 1);
