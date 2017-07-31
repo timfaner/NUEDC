@@ -76,7 +76,7 @@ sensor.set_auto_gain(False) # must be turned off for color tracking
 sensor.set_auto_whitebal(False) # must be turned off for color tracking
 sensor.set_auto_exposure(False)
 
-while not Pin('P0', Pin.IN, Pin.PULL_DOWN):
+while not Pin('P5', Pin.IN, Pin.PULL_DOWN):
     utime.sleep_ms(1)
 
 
