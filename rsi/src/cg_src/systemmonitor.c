@@ -78,7 +78,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
 
 	SCI5_Serial_Send(package,length);
     
-//    free(package);
+    free(package);
     package = NULL;
     free(arg_str);
     arg_str = NULL;
