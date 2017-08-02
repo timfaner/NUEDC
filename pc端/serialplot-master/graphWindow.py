@@ -281,8 +281,11 @@ class GraphFrame(ttk.Frame):
                             self.root.line_x.append([])
                         self.last_time = time.time()
                         self.init_time = self.root.rsa_time.get()
-                        if self.root.logfile.closed:
-                            self.root.logfile  = open(self.root.variables['filename'], 'a')
+                        try:
+                            if self.root.logfile.closed:
+                                self.root.logfile  = open(self.root.variables['filename'], 'a')
+                        except :
+                            pass
                         self.first_time = 0
 
                     self.root.time_for_graph.set(int(self.rsa.getTime())-self.init_time)
