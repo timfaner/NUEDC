@@ -132,7 +132,7 @@ class GraphTopLevel:
         self.root.update()
         scrwidth = self.root.winfo_screenwidth()
         scrheight = self.root.winfo_screenheight()
-        winwidth = 950
+        winwidth = 1050
         winheight = 500
         
         winposx = int(round(scrwidth/2 - winwidth/2))
@@ -206,9 +206,11 @@ class GraphFrame(ttk.Frame):
         statrbtn.grid(row = 0,column = 0) 
         stopbtn.grid(row = 0,column = 1) 
         MAVStatus(self.root, self.root,text = 'Mav_staus',height = 800).grid(row = 1,columnspan =2)
-        Graph(self.root, self.root).grid(row = 0,column = 2,sticky = 's',rowspan = 2) 
-        StatusBar(self.root, self.root).grid(row = 2,column = 0,columnspan = 3,sticky = 's')
-
+        Sendarea(self.root, self.root,text = 'Sendarea').grid(row = 0,column = 2,rowspan = 2)
+        Graph(self.root, self.root).grid(row = 0,column = 3,sticky = 's',rowspan = 2) 
+        
+        StatusBar(self.root, self.root).grid(row = 2,column = 0,columnspan = 4,sticky = 's')
+        
         self.root.bind('<Return>',self.test)
         
         
@@ -463,9 +465,9 @@ class MAVStatus(ttk.LabelFrame):
         lf2 = Data(self,self.root,text = 'Data')
         lf3 = Error(self,self.root,text = 'Error')
         #timelb.grid(row = 0,column = 0,sticky = 'n',padx = 7,pady = 10)
-        lf1.grid(row = 1,column = 0,sticky = 'n',padx = 7,pady = 10)
-        lf2.grid(row = 2,column = 0,sticky = 'n',padx = 7,pady = 10)
-        lf3.grid(row = 3,column = 0,sticky = 'n',padx = 7,pady = 10)
+        lf1.grid(row = 1,column = 0,sticky = 'n',padx = 7,pady = 5)
+        lf2.grid(row = 2,column = 0,sticky = 'n',padx = 7,pady = 5)
+        lf3.grid(row = 3,column = 0,sticky = 'n',padx = 7,pady = 5)
         
         
 class Event(ttk.LabelFrame):
@@ -480,8 +482,8 @@ class Event(ttk.LabelFrame):
         self.l2 = tk.LabelFrame(self,text = 'Past',width = 70)
         self.l1.pack()
         self.l2.pack()
-        self.m1 = tk.Label(self.l1,textvariable = self.new_event_list)
-        self.m2 = tk.Label(self.l2,textvariable = self.old_event_list)
+        self.m1 = tk.Label(self.l1,height = 2,width = 11,relief = 'sunken',textvariable = self.new_event_list)
+        self.m2 = tk.Label(self.l2,height = 2,width = 11,relief = 'sunken',textvariable = self.old_event_list)
         self.m1.pack()
         self.m2.pack()
         
@@ -519,13 +521,13 @@ class Data(ttk.LabelFrame):
         self.root = root
         self.l1 = tk.LabelFrame(self,text = 'Task Numeber')
         self.l1.pack(pady = 6,padx = 5)
-        self.l2 = tk.Label(self.l1,textvariable =self.root.rsa_params[3])
+        self.l2 = tk.Label(self.l1,height = 1,width = 8,relief = 'sunken',textvariable =self.root.rsa_params[3])
         self.l2.pack(fill = 'both')
         self.pidlb = tk.LabelFrame(self,text = 'pid params')
         self.pidlb.pack(pady = 6,padx = 5)
-        self.n1 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[0])
-        self.n2 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[1])
-        self.n3 = tk.Label(self.pidlb,textvariable = self.root.rsa_params[2])
+        self.n1 = tk.Label(self.pidlb,height = 1,width = 5,relief = 'sunken',textvariable = self.root.rsa_params[0])
+        self.n2 = tk.Label(self.pidlb,height = 1,width = 5,relief = 'sunken',textvariable = self.root.rsa_params[1])
+        self.n3 = tk.Label(self.pidlb,height = 1,width = 5,relief = 'sunken',textvariable = self.root.rsa_params[2])
         self.n1.grid(row = 0,padx = 5,pady = 5)
         self.n2.grid(row = 0,column  = 1,padx = 5,pady = 5)
         self.n3.grid(row = 0,column  = 2,padx = 5,pady = 5)
@@ -538,13 +540,13 @@ class Error(ttk.LabelFrame):
         self.parent = parent
         self.root = root     
         self.root.rsa_error.trace('w',self.labelBlink)
-        self.l2 = tk.Label(self,textvariable = self.root.rsa_error)
+        self.l2 = tk.Label(self,textvariable = self.root.rsa_error,width = 8,height = 2,bg = 'green',relief = 'groove')
         self.l2.pack(fill ='both')
         self.l2.bind('<Button-1>',self.reseeet)
         
     def labelBlink(self,*arg):
         
-        self.l2.config(background = 'red')
+        self.l2.config(background = 'red',relief = 'raised')
         if self.count < 2:
             self.timer = Timer(0.1,self.labelBlink1)
             self.timer.start()
@@ -555,7 +557,7 @@ class Error(ttk.LabelFrame):
         self.timer = Timer(0.1,self.labelBlink)
         self.timer.start()
     def reseeet(self,*arg):
-        self.l2.config(background = 'white')
+        self.l2.config(background = 'green',relief = 'groove')
 
 
 
@@ -692,6 +694,14 @@ class RSA_STATUS:
         return  self.systime
 
 #If this script is executed, just run the main script
+
+class Sendarea(ttk.LabelFrame):   
+    def __init__(self, parent, root,**kw):
+        ttk.LabelFrame.__init__(self, parent,**kw)
+        self.parent = parent
+        self.root = root
+        self.l1 = tk.Label(self,text = 'test')
+        self.l1.grid()
 
 
 class Graph(ttk.Frame):

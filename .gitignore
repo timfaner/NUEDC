@@ -5,4 +5,8 @@ mavlink_macos/*
 mavlink_sender/*
 .vscode/*
 .DS_Store
-*.pyc
+*/*.pyc
+pc端/test/*
+.pyc
+*.py[cod]
+*/*.py[cod]
