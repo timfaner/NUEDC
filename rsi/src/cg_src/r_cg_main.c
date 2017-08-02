@@ -56,6 +56,11 @@ Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 
+
+
+#define TASK_HEIGHT 0.7
+#define TASK1_X_SPEED 0.3
+#define TASK1_X_SPEED_OVERFLY -0.15
 /*************spi parameters**********************/
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
@@ -113,7 +118,7 @@ void main(void)
 	//initial
 	R_MAIN_UserInit();
     //get data from openmv
-	spiReceive(rx_buffer);
+	
 
 
     /* Start user code. Do not edit comment generated here */
@@ -130,13 +135,15 @@ void main(void)
 	//倒计时
 	armcheck();
 	systemEventUpdate(EVENT_ARMCHECK);
-		mav_takeoff(1.0);
+
+	mav_takeoff(TASK_HEIGHT);
 	systemEventUpdate(EVENT_TAKEOFF);
 
-	while (getHeight() < 1.0)
+	while (*(get_height()) < TASK_HEIGHT-0.1)
 		delay_ms(40);
 
 	rasCmdToOpenmv(task_number);
+
 	OPENMV_WORK_ENABLE_PIN = 1; //通知openmv开始工作 将该引脚置高
 	systemEventUpdate(EVENT_OPENMVBOOTUP);
 	delay_ms(100);  //wait openmv initialize
@@ -176,12 +183,13 @@ void R_MAIN_UserInit(void)
 	R_CMT3_Start();
 	R_RSPI0_Start();
 	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
+	spiReceive(rx_buffer);
+
 	flag_data_updated=getFlagDataUpdated();
 	apm_attitude=getAttitude();
 	wait_link();
-
+	requestDataStream(500,50,50);
 	debug_text("\nRx Initialized\n");
-
 
 	PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
 	SetMode(AUTOMATIC);
@@ -220,22 +228,24 @@ void task1(void)
 	debug_text("\nworking task1\n");
 	while(1){
 		//if(land_ma=rk == landed)break;
-		uart_5_printf("error flag %d  ",openmv_data[ERROR_FLAG]);
-		uart_5_printf("mav status %d\n",openmv_data[MAV_STATUS]);
-		delay_ms(100);
+
+
 		if(openmv_data[ERROR_FLAG] == 0)
 		{
 			debug_text("error_flag = 0");
 			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-			if(openmv_data[LAND_FLAG] !=1){
+			if(openmv_data[LAND_FLAG] ==1){
+
 				systemEventUpdate(EVENT_LAND);
-//				mav_land();
+
+				mav_land();
+			
 				// while(land_mark != LANDED){
 				// 	updata land mark
 				// 	and updata EVENT_LANDED
 				// }
 			}
-			else{ debug_text(" mav status");
+			else{ 
 				switch (openmv_data[MAV_STATUS]){
 					case MAV_STATUS_INIT:
 						break;
@@ -248,22 +258,24 @@ void task1(void)
 						Compute(&input);
 						y_speed = output;
 						//send to apm
-						set_vel(0.0, y_speed, 0.0);
-						uart_5_printf("\ntake off %f\n", y_speed);
-						delay_ms(200);
+						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
+						
+						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
 						break;
 					case MAV_STATUS_FLYING:
 						systemEventUpdate(EVENT_XUNXIAN);
-						//dataFushion();
+
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
 						input = y_offset;
 						Compute(&input);
 						y_speed = output;
+
 						//send to apm
-						set_vel(0.0, y_speed, 0.0);
-						delay_ms(200);
+						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
+						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
 						break;
+
 					case MAV_STATUS_PRELAND:
 						systemEventUpdate(EVENT_PRELAND);
 						//dataFushion();
@@ -279,14 +291,14 @@ void task1(void)
 						Compute(&input);
 						x_speed = output;
 						//send to apm
-						set_vel(x_speed, y_speed, 0.0);
-						delay_ms(200);
+						
+						set_new_vel(x_speed, y_speed, TASK_HEIGHT);
+						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+						systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
 						break;
 					case MAV_STATUS_OVEFRFLY:
 						systemEventUpdate(EVENT_OVERFLY);
-						//dataFushion();
-						//pid
-						//send to apm
+						set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
 						break;
 					case MAV_STATUS_ERROR:
 						break;
@@ -314,7 +326,7 @@ void task4(void)
 }
 
 void taskError(uint8_t openmverror){
-
+	// land
 }
 void rasCmdToOpenmv(uint8_t flag)
 {

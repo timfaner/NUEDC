@@ -206,8 +206,8 @@ class GraphFrame(ttk.Frame):
         statrbtn.grid(row = 0,column = 0) 
         stopbtn.grid(row = 0,column = 1) 
         MAVStatus(self.root, self.root,text = 'Mav_staus',height = 800).grid(row = 1,columnspan =2)
-        Sendarea(self.root, self.root,text = 'Sendarea').grid(row = 0,column = 2,rowspan = 2)
-        Graph(self.root, self.root).grid(row = 0,column = 3,sticky = 's',rowspan = 2) 
+        Sendarea(self.root, self.root,text = 'Sendarea').grid(row = 0,column = 3,rowspan = 2,sticky = 'n')
+        Graph(self.root, self.root).grid(row = 0,column = 2,sticky = 's',rowspan = 2) 
         
         StatusBar(self.root, self.root).grid(row = 2,column = 0,columnspan = 4,sticky = 's')
         
@@ -215,7 +215,6 @@ class GraphFrame(ttk.Frame):
         
         
         self.creatAndOpenSerial()
-        self.root.ser.readline()
         self.root.ser.close()
         self.first_time = 1
         if self.root.variables['log2file'] == 'on': 
@@ -540,24 +539,20 @@ class Error(ttk.LabelFrame):
         self.parent = parent
         self.root = root     
         self.root.rsa_error.trace('w',self.labelBlink)
-        self.l2 = tk.Label(self,textvariable = self.root.rsa_error,width = 8,height = 2,bg = 'green',relief = 'groove')
+        self.l2 = tk.Label(self,textvariable = self.root.rsa_error,width = 12,height = 3,bg = 'green',relief = 'groove')
         self.l2.pack(fill ='both')
         self.l2.bind('<Button-1>',self.reseeet)
         
     def labelBlink(self,*arg):
         
         self.l2.config(background = 'red',relief = 'raised')
-        if self.count < 2:
-            self.timer = Timer(0.1,self.labelBlink1)
-            self.timer.start()
-        self.count = self.count+1
     def labelBlink1(self,*arg):
         
         self.l2.config(background = 'yellow')
         self.timer = Timer(0.1,self.labelBlink)
         self.timer.start()
     def reseeet(self,*arg):
-        self.l2.config(background = 'green',relief = 'groove')
+        self.l2.config(background = 'green',relief = 'groove',text = 'error cleand')
 
 
 
@@ -700,10 +695,39 @@ class Sendarea(ttk.LabelFrame):
         ttk.LabelFrame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root
-        self.l1 = tk.Label(self,text = 'test')
-        self.l1.grid()
+        self.linkb = tk.Button(self,text = 'link',command = self.sendlink)
+        
+        self.pidlb = tk.LabelFrame(self,text = 'PID PARRAM')
+        self.p = tk.Entry(self.pidlb,text = 'p',width = 4,fg = 'red')
+        self.i = tk.Entry(self.pidlb,text = 'i',width = 4,fg = 'red')
+        self.d = tk.Entry(self.pidlb,text = 'd',width = 4,fg = 'red')
+        self.send = tk.Button(self.pidlb,text = 'Set!',command = self.sendpid )
+        self.p.grid(row = 0,column = 0,padx=1)
+        self.i.grid(row = 0,column = 1,padx=1)
+        self.d.grid(row = 0,column = 2,padx=1)
+        self.send.grid(row = 1,column = 0,columnspan = 3)
 
-
+        self.pidlb.grid()
+        self.linkb.grid(row = 1)
+        
+        
+    def sendfunc(self):
+        text = self.l1.get()
+        if(self.root.ser.isOpen()):
+            self.root.ser.write()
+    def sendpid(self):
+        if (self.p == 'p') and (self.i == 'i') and (self.d == 'd'):
+            messagebox.showerror(message=('Please enter you params！'))    
+        else:        
+            self.p.delete()
+            self.i.delete()
+            self.d.delete()
+        
+    def sendlink(self):
+        if(self.root.ser.isOpen()):
+            self.root.ser.write('link'.encode('utf-8'))
+        else:
+            messagebox.showerror(message=('Not Connect'))
 class Graph(ttk.Frame):
 
     def __init__(self, parent, root,**kw):
