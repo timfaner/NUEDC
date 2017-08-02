@@ -23,7 +23,7 @@ void PID(double* Input, double* Output, double* Setpoint,
 	SetOutputLimits(-255, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    myPid.SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    myPid.SampleTime = 10;							//default Controller Sample Time is 0.1 seconds
 
     SetControllerDirection(ControllerDirection);
     SetTunings(Kp, Ki, Kd);
@@ -45,7 +45,8 @@ int Compute(double * Input)
    myPid.myInput = Input;
    now = millis();
    timeChange = (now - myPid.lastTime);
-   if(timeChange>=myPid.SampleTime)
+
+   if(timeChange >= myPid.SampleTime)
    {
       /*Compute all the working error variables*/
 	  double input, error, dInput, output;
@@ -73,52 +74,6 @@ int Compute(double * Input)
 }
 
 
-int Comput(void)
-{
-	union{
-	signed int all;
-	unsigned char s[2];
-	}data;
-	char i, sci_send = 10;
-	double input, error, dInput, output;
-	unsigned long now, timeChange;
-    if(!myPid.inAuto) return false;
-    now = millis();
-    timeChange = (now - myPid.lastTime);
-    if(timeChange>=myPid.SampleTime)
-    {
-      /*Compute all the working error variables*/
-//		SCI5_Serial_Send(&sci_send, 1);
-    while(sci5_receive_available() > 0)
-    {
-    SCI5_Serial_Receive(&data.s[i], 1);
-    i++;
-    }
-   	  i=0;
-	  input = (double)(data.all);
-      error = *myPid.mySetpoint - input;
-      myPid.ITerm+= (myPid.ki * error);
-      if(myPid.ITerm > myPid.outMax) myPid.ITerm= myPid.outMax;
-      else if(myPid.ITerm < myPid.outMin)myPid.ITerm= myPid.outMin;
-      dInput = (input - myPid.lastInput);
- 
-      /*Compute PID Output*/
-      output = myPid.kp * error + myPid.ITerm- myPid.kd * dInput;
-      
-	  if(output > myPid.outMax) output = myPid.outMax;
-      else if(output < myPid.outMin) output = myPid.outMin;
-	  *myPid.myOutput = output;
-	  
-      /*Remember some variables for next time*/
-      myPid.lastInput = input;
-      myPid.lastTime = now;
-	//  Serial.print(*myPid.myOutput);
-	//  Serial.print(",");
-	//  Serial.println(*myInput);
-	  return true;
-   }
-   else return false;
-}
 
 
 /* SetTunings(...)*************************************************************
