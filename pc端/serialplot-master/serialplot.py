@@ -31,7 +31,7 @@ root.geometry('{}x{}+{}+{}'.format(winwidth, winheight, winposx, winposy))
 #Set the title and icon and stuff
 root.title('Serial Plotter Configuration')
 if os.name == 'nt':
-    root.iconbitmap(default='graphs.ico')
+    pass
 root.resizable(width=True, height=True)
 
 #Unhide the window now that it's configured
