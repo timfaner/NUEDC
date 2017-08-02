@@ -2,7 +2,9 @@
 Program to plot serial data in real time. Once the root window is created and 
 configured, all other actions occur within the ConfigFrame and GraphTopLevel
 """
-
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 import matplotlib
 matplotlib.use('TkAgg')
 import os
