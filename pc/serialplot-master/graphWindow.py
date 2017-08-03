@@ -169,7 +169,7 @@ class GraphFrame(ttk.Frame):
         self.root.starttime = 0 #time when we started      
         
         
-        self.root.package_error = tk.StringVar(self,value = 'Null')
+        
         self.rsa = RSA_STATUS(self.root)
         self.root.line_y = []
         self.root.line_x = []
@@ -191,7 +191,8 @@ class GraphFrame(ttk.Frame):
         self.root.rsa_interval =tk.StringVar(self,value = 'Null')
         self.root.graph_data_ready =0
         self.root.graphstr_y = tk.DoubleVar(self,value = 0.0)
-        self.root.package_statu = tk.StringVar(self,value = 'NoPackage')
+        self.root.package_statu = tk.StringVar(self,value = '等待链接')
+        self.root.package_content = tk.StringVar(self,value = 'Null')
         self.root.count = 0
         self.templog = ''
 
@@ -256,12 +257,16 @@ class GraphFrame(ttk.Frame):
         if(1):  #不想退格了。。
             try:
                 ret = self.root.ser.readline()
-                if(ret == b''): #若读取失败，则跳过
-                    messagebox.showerror(message=('串口超时'))
-                    self.stop_flag = 1
-                    self.first_time = 1
+                if(ret == b''): #若没有读取到，则跳过并raise no package received
+                    self.root.package_statu.set('串口超时未收到包')
+                    #messagebox.showerror(message=('串口超时'))
+                    #self.stop_flag = 1
+                    #self.first_time = 1
                 else:
                     #更新数据接收率
+                    
+                    self.root.package_statu.set('正常')
+                    self.root.package_content.set(str(ret))
                     self.root.count +=1
                     self.root.variables['refreshrate'].set(\
                     value='{:.1f}'.format(round(self.root.count/time.clock(), 1)))
@@ -363,6 +368,7 @@ class GraphFrame(ttk.Frame):
                 messagebox.showerror(message=('Start Failed:', e))
                 self.root.ser.close()
                 self.stop_flag = 1
+                self.root.package_statu.set('串口关闭')
                 
                 
         if(self.stop_flag != 1):    
@@ -379,6 +385,7 @@ class GraphFrame(ttk.Frame):
         self.startpro()
 
     def stoppro(self):
+        self.root.package_statu.set('串口关闭')
         self.first_time = 1
         self.stop_flag = 1
         if self.serial_timer:
@@ -419,7 +426,7 @@ class GraphFrame(ttk.Frame):
             self.root.ser = serial.Serial(\
                 port=port,\
                 baudrate=str(self.root.variables['baud']),\
-                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout=2) 
+                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout=int(self.root.variables['timeout'])) 
         else:
             first_space = self.root.variables['COMport'].index(' ')
             port = self.root.variables['COMport'][0:first_space].strip()
@@ -427,7 +434,7 @@ class GraphFrame(ttk.Frame):
             self.root.ser = serial.Serial(\
                 port=port,\
                 baudrate=str(self.root.variables['baud']),\
-                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout=2, rtscts=True, dsrdtr=True) 
+                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout = int(self.root.variables['timeout']), rtscts=True, dsrdtr=True) 
         io.DEFAULT_BUFFER_SIZE = 5000
             
         #Purge the buffer of any previous data
@@ -459,6 +466,9 @@ class MAVStatus(ttk.LabelFrame):
         ttk.LabelFrame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root  
+        #self['background'] = 'white'
+        self['relief'] = 'groove'
+        self['borderwidth'] = 2
         #timelb = tk.Label(self,textvariable = str(self.root.rsa_time))
         lf1 = Event(self,self.root,text = 'Event',)
         lf2 = Data(self,self.root,text = 'Data')
@@ -474,7 +484,7 @@ class Event(ttk.LabelFrame):
         ttk.LabelFrame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root
-        
+        #self['background'] = 'white'
         self.new_event_list = tk.StringVar(self,value = 'Standby')
         self.old_event_list = tk.StringVar(self,value = 'Standby')
         self.l1 = tk.LabelFrame(self,text = 'Current',width = 70)
@@ -518,6 +528,7 @@ class Data(ttk.LabelFrame):
         ttk.LabelFrame.__init__(self, parent,**kw)
         self.parent = parent
         self.root = root
+        #self['background'] = 'white'
         self.l1 = tk.LabelFrame(self,text = 'Task Numeber')
         self.l1.pack(pady = 6,padx = 5)
         self.l2 = tk.Label(self.l1,height = 1,width = 8,relief = 'sunken',textvariable =self.root.rsa_params[3])
@@ -538,6 +549,7 @@ class Error(ttk.LabelFrame):
         self.count = 0
         self.parent = parent
         self.root = root     
+        #self['background'] = 'white'
         self.root.rsa_error.trace('w',self.labelBlink)
         self.l2 = tk.Label(self,textvariable = self.root.rsa_error,width = 12,height = 3,bg = 'green',relief = 'groove')
         self.l2.pack(fill ='both')
@@ -546,15 +558,11 @@ class Error(ttk.LabelFrame):
     def labelBlink(self,*arg):
         
         self.l2.config(background = 'red',relief = 'raised')
-    def labelBlink1(self,*arg):
-        
-        self.l2.config(background = 'yellow')
-        self.timer = Timer(0.1,self.labelBlink)
-        self.timer.start()
+    
     def reseeet(self,*arg):
-        self.l2.config(background = 'green',relief = 'groove',text = 'error cleand')
-
-
+        
+        self.root.rsa_error.set('error cleand')
+        self.l2.config(background = 'green',relief = 'groove')
 
 class StatusBar(ttk.Frame):
     def __init__(self, parent, root,**kw):
@@ -565,7 +573,7 @@ class StatusBar(ttk.Frame):
         self['relief'] = 'sunken'
         
         COMlabel = ttk.Label(self, text= \
-            self.root.variables['COMport'][0:5].strip() + ':')
+            self.root.variables['COMport'][1:7].strip() + ':')
         baudLabel = ttk.Label(self, text= \
             str(self.root.variables['baud'].strip()))
         COMlabel.pack(side='left', padx=0)
@@ -585,7 +593,7 @@ class StatusBar(ttk.Frame):
         
         
         
-        updateLabel = ttk.Label(self, text='Data Recieved at: ')
+        updateLabel = ttk.Label(self, text='数据接收频率: ')
         updateLabel.pack(side='left')
         updateRate = ttk.Label(self, textvariable=self.root.variables['refreshrate'])
         updateRate.pack(side='left')
@@ -594,10 +602,20 @@ class StatusBar(ttk.Frame):
         ttk.Separator(self, orient='vertical').pack(side='left', fill='y', padx=5)  
              
         
-        package_errorLabel = ttk.Label(self, text='Package Error:')
-        package_errorLabel.pack(side='left')
-        package_error = ttk.Label(self, textvariable=self.root.package_error)
-        package_error.pack(side='left')
+        package_statuLabel = ttk.Label(self, text='串口状态:')
+        package_statuLabel.pack(side='left')
+        package_statu = ttk.Label(self, textvariable=self.root.package_statu,width = 10)
+        package_statu.pack(side='left')
+
+        ttk.Separator(self, orient='vertical').pack(side='left', fill='y', padx=5)  
+
+        package_contentLabel = ttk.Label(self, text='内容:')
+        package_contentLabel.pack(side='left')
+        package_content = ttk.Label(self, textvariable=self.root.package_content,width = 15)
+        package_content.pack(side='left')
+
+        ttk.Separator(self, orient='vertical').pack(side='left', fill='y', padx=5)  
+
         if self.root.variables['log2file'] == 'on':
             self.root.toggleLogButton = ttk.Button(self, text='Turn Logging Off', command = self.toggleLog)
             self.root.toggleLogButton.pack(side='left')

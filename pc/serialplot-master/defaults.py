@@ -38,4 +38,5 @@ defaults = {'COMport': '',
  'refreshfreq': 20,
  'startmax': 'no',
  'stopbits': 1,
- 'stsbrwdth': 7}
+ 'stsbrwdth': 7,
+ 'timeout':1}

@@ -272,8 +272,11 @@ class DataTab(ttk.Frame):
         
         #How long is the data coming in?
              
-
+        serialtimeoutlabel = ttk.Label(self, text='串口超时时间')
+        serialtimeout = ttk.Entry(self, width=10, textvariable=self.controller.TKvariables['timeout'])
+        serialtimeoutlbl = ttk.Label(self, text='s')   
         
+
         numgraphslabel = ttk.Label(self, text='图表数量')
         numgraphsbox = ttk.Combobox(self, width=8, values=self.numgraphslist, \
             textvariable=self.controller.TKvariables['numgraphs'])
@@ -300,15 +303,18 @@ class DataTab(ttk.Frame):
         '绘图中容纳的时间长度 单位毫秒')
 
         AObutton = ttk.Button(self, text='Advanced Options', command=self.AObutton)
-                                    
-        datalabel.grid(row=1, column=1, sticky='w')
-        databox.grid(row=1, column=2, sticky='w', padx=7)
-        datapostlbl.grid(row=1, column=3, sticky='w') 
-        numgraphslabel.grid(row=2, column=1, sticky='w')
-        numgraphsbox.grid(row=2, column=2, sticky='w', padx=7)
-        maxcheck.grid(row=3, column=1, columnspan=2, sticky='w')
-        log2filecheck.grid(row=4, column=1, columnspan=2, sticky='w')
-        AObutton.grid(row=5, column=1, columnspan=2, sticky='ew')
+
+        serialtimeoutlabel.grid(row=1, column=1, sticky='w')
+        serialtimeout.grid(row=1, column=2, sticky='w')
+        serialtimeoutlbl.grid(row=1, column=3, sticky='w')                 
+        datalabel.grid(row=2, column=1, sticky='w')
+        databox.grid(row=2, column=2, sticky='w', padx=7)
+        datapostlbl.grid(row=2, column=3, sticky='w') 
+        numgraphslabel.grid(row=3, column=1, sticky='w')
+        numgraphsbox.grid(row=3, column=2, sticky='w', padx=7)
+        maxcheck.grid(row=4, column=1, columnspan=2, sticky='w')
+        log2filecheck.grid(row=5, column=1, columnspan=2, sticky='w')
+        AObutton.grid(row=6, column=1, columnspan=2, sticky='ew')
         
     def AObutton(self):
         toplvl = tk.Toplevel()
