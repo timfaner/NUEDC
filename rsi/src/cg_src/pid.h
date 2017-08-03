@@ -36,15 +36,24 @@ struct PID
 	int inAuto;
 };
 
-void PID(double* Input, double* Output, double* Setpoint,
+void xPID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection);
-int Compute(double * Input);
-int Comput(void);
-void SetTunings(double Kp, double Ki, double Kd);
-void SetSampleTime(int NewSampleTime);
-void SetOutputLimits(double Min, double Max);
-void SetMode(int Mode);
-void Initialize(void);
-void SetControllerDirection(int Direction);
+int  xCompute(double * Input);
+void xSetTunings(double Kp, double Ki, double Kd);
+void xSetSampleTime(int NewSampleTime);
+void xSetOutputLimits(double Min, double Max);
+void xSetMode(int Mode);
+void xInitialize(void);
+void xSetControllerDirection(int Direction);
+
+void yPID(double* Input, double* Output, double* Setpoint,
+        double Kp, double Ki, double Kd, int ControllerDirection);
+int  yCompute(double * Input);
+void ySetTunings(double Kp, double Ki, double Kd);
+void ySetSampleTime(int NewSampleTime);
+void ySetOutputLimits(double Min, double Max);
+void ySetMode(int Mode);
+void yInitialize(void);
+void ySetControllerDirection(int Direction);
 
 #endif

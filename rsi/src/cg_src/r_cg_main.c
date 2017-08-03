@@ -73,7 +73,7 @@ volatile uint16_t system_event;
 volatile uint8_t system_error_code;
 
 /*********pid parameters********/
-double input= 0.0, output, setpoint=0.0;
+double x_input= 0.0, x_output, setpoint=0.0,y_input = 0.0, y_output;
 double kp=5.0, ki=6.0, kd=3.0;
 
 /***************functions******************/
@@ -191,8 +191,10 @@ void R_MAIN_UserInit(void)
 	requestDataStream(500,50,50);
 	debug_text("\nRx Initialized\n");
 
-	PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
-	SetMode(AUTOMATIC);
+	xPID(&x_input, &x_output, &setpoint, kp, ki, kd, DIRECT);
+	xSetMode(AUTOMATIC);
+	yPID(&y_input, &y_output, &setpoint, kp, ki, kd, DIRECT);
+	ySetMode(AUTOMATIC);
     /* End user code. Do not edit comment generated here */
 }
 
@@ -254,9 +256,9 @@ void task1(void)
 						//dataFushion();
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-						input = y_offset;
-						Compute(&input);
-						y_speed = output;
+						y_input = y_offset;
+						yCompute(&y_input);
+						y_speed = y_output;
 						//send to apm
 						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
 						
@@ -267,9 +269,9 @@ void task1(void)
 
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-						input = y_offset;
-						Compute(&input);
-						y_speed = output;
+						y_input = y_offset;
+						yCompute(&y_input);
+						y_speed = y_output;
 
 						//send to apm
 						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
@@ -282,14 +284,13 @@ void task1(void)
 						x_offset = rasX_offsetCalculate(openmv_data[3]);
 						y_offset = rasY_offsetCalculate(openmv_data[2]);
 						//pid
-						input = y_offset;
-						Compute(&input);
-						y_speed = output;
+						y_input = y_offset;
+						yCompute(&y_input);
+						y_speed = y_output;
 
-						input = x_offset;
-						PID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
-						Compute(&input);
-						x_speed = output;
+						x_input = x_offset;
+						xCompute(&x_input);
+						x_speed = x_output;
 						//send to apm
 						
 						set_new_vel(x_speed, y_speed, TASK_HEIGHT);
