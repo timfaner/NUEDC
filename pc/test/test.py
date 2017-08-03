@@ -88,3 +88,4 @@ def SaveFile():
 if __name__ == "__main__":
     print("开始")
     ui_process()
+b = Serial(port='/dev/tty.usbmodem1411',baudrate=115200)
