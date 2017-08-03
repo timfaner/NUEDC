@@ -92,14 +92,8 @@ int armflag=0;
 int* flag_data_updated;
 float** apm_attitude;
 float *apm_height = NULL;
-unsigned char recv_char;
-unsigned long takeoff_time=0;
-
 unsigned long last_heartbeat_time=0;
-unsigned long last_cycle_time=0;
-unsigned long this_cycle_time=0;
 unsigned long runtime=0;
-int run_count=0;
 /***************************************/
 
 /* End user code. Do not edit comment generated here */
@@ -232,9 +226,14 @@ void task1(void)
 	debug_text("\nworking task1\n");
 	while(1){
 		//if(land_ma=rk == landed)break;
-
-
-		if(openmv_data[ERROR_FLAG] == 0)
+		runtime = millis();
+		if((runtime - last_heartbeat_time) >= 1000)
+		{
+			//send heartbeat
+			S_heartbeat();
+			last_heartbeat_time = runtime;
+		}	
+		if(openmv_data[ERROR_FLAG] != 0)
 		{
 			debug_text("error_flag = 0");
 			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
@@ -311,7 +310,6 @@ void task1(void)
 		}
 		else
 			taskError(openmv_data[ERROR_FLAG]);
-
 	}
 
 }
@@ -330,6 +328,15 @@ void task4(void)
 
 void taskError(uint8_t openmverror){
 	// land
+
+		runtime = millis();
+		if((runtime - last_heartbeat_time) >= 3000)
+		{
+			//send heartbeat
+			S_heartbeat();
+			last_heartbeat_time = runtime;			
+		}
+
 }
 void rasCmdToOpenmv(uint8_t flag)
 {
