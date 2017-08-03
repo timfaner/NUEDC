@@ -3,7 +3,17 @@ The GraphTopLevel is a ttk.Frame class that gets packd into the root window when
 the configuration is complete. All the graph updating takes place in updateGraph
 '''
 tempk = []
-import threading
+import threading,json
+with open('./package_define.json','r') as a:
+    cfg = json.load(a)
+
+
+cfg1 = cfg['cfg1']
+cfg_line_to_data = cfg['cfg_line_to_data']
+cfg_data = cfg['cfg_data']
+cfg_event = cfg['cfg_event']
+cfg_error = cfg['cfg_error']
+'''
 cfg1={\
     'MONITOR_ERROR':1,\
     'MONITOR_EVENT':2,\
@@ -63,7 +73,7 @@ cfg_error ={\
     'ERROR_CANNOT_GET_DATA': 	 68,\
     'ERROR_WRONG_ORDER': 		 69,\
     }
-
+'''
 def dictOp(cfg,itemss):
     temp = -1
     for key in cfg:

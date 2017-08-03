@@ -1,0 +1,60 @@
+{
+    "cfg1": {
+        "MONITOR_ERROR": 1,
+        "MONITOR_EVENT": 2,
+        "DATA_OPENMV": 97,
+        "DATA_X_OFFSET_RESULT": 98,
+        "DATA_Y_OFFSET_RESULT": 99,
+        "DATA_PID_X_SPEED": 100,
+        "DATA_PID_Y_SPEED": 101,
+        "DATA_ATTITUDE": 102,
+        "DATA_PID_PARAMETERS": 103,
+        "DATA_TASK_NUMBER": 104
+    },
+    "cfg_error": {
+        "ERROR_TASK_NUMBER": 65,
+        "ERROR_SPI_DATA": 66,
+        "ERROR_UNKNOWN_PLACE": 67,
+        "ERROR_CANNOT_GET_DATA": 68,
+        "ERROR_WRONG_ORDER": 69
+    },
+    "cfg_event": {
+        "BOOTUP": 1,
+        "STARTBUTTON": 2,
+        "NOLOCALPOSITION": 4,
+        "ARMCHECK": 8,
+        "TAKEOFF": 16,
+        "OPENMVBOOTUP": 32,
+        "TRACKING": 64,
+        "LOSTLINE": 128,
+        "PRELAND": 256,
+        "LANDING": 512,
+        "LANDED": 1024,
+        "OVERFLY": 2048,
+        "TASK1": 4096,
+        "TASK2": 8192,
+        "TASK3": 16384,
+        "TASK4": 32768
+    },
+    "cfg_data": {
+        "DATA_OPENMV": 97,
+        "DATA_X_OFFSET_RESULT": 98,
+        "DATA_Y_OFFSET_RESULT": 99,
+        "DATA_PID_X_SPEED": 100,
+        "DATA_PID_Y_SPEED": 101,
+        "DATA_ATTITUDE": 102,
+        "DATA_PID_PARAMETERS": 103,
+        "DATA_TASK_NUMBER": 104
+    },
+    "cfg_line_to_data": {
+        "PID_X": 1,
+        "PID_Y": 2,
+        "MV_X": 3,
+        "MV_Y": 4,
+        "Pitch": 5,
+        "Yaw": 6,
+        "Row": 7,
+        "-": "-",
+        "0": 0
+    }
+}

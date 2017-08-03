@@ -5,6 +5,7 @@ configured, all other actions occur within the ConfigFrame and GraphTopLevel
 
 import matplotlib
 matplotlib.use('TkAgg')
+
 import os
 
 from cfgWindow import *
