@@ -91,6 +91,7 @@ void taskError(uint8_t);
 int armflag=0;
 int* flag_data_updated;
 float** apm_attitude;
+float *apm_height = NULL;
 unsigned char recv_char;
 unsigned long takeoff_time=0;
 
@@ -139,7 +140,7 @@ void main(void)
 	mav_takeoff(TASK_HEIGHT);
 	systemEventUpdate(EVENT_TAKEOFF);
 
-	while (*(get_height()) < TASK_HEIGHT-0.1)
+	while (*(apm_height) < TASK_HEIGHT-0.1)
 		delay_ms(40);
 
 	rasCmdToOpenmv(task_number);
@@ -187,6 +188,7 @@ void R_MAIN_UserInit(void)
 
 	flag_data_updated=getFlagDataUpdated();
 	apm_attitude=getAttitude();
+	apm_height = get_height();
 	wait_link();
 	requestDataStream(500,50,50);
 	debug_text("\nRx Initialized\n");

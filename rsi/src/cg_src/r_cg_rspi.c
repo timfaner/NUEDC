@@ -83,7 +83,7 @@ void R_RSPI0_Create(void)
                         _0400_RSPI_DATA_LENGTH_BITS_8 | _0000_RSPI_MSB_FIRST;
 
     /* Set SPEI0, SPRI0, SPTI0 and SPII0 priority level */
-    IPR(RSPI0,SPTI0) = _0F_RSPI_PRIORITY_LEVEL15;
+    IPR(RSPI0,SPTI0) = _0D_RSPI_PRIORITY_LEVEL13;
 
     /* Set RSPCKA pin */
     MPC.P24PFS.BYTE = 0x0DU;
