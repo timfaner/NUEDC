@@ -25,12 +25,12 @@ def sendpackage(*arg):
     for data in Arg[1:]:
         check_bit = data ^ check_bit
     spi.send(0XD3)
-    utime.sleep_us(10)
+    utime.sleep_us(50)
     for data in Arg:
         spi.send(ustruct.pack("<B",data))
-        utime.sleep_us(10)
+        utime.sleep_us(50)
     spi.send(check_bit)
-    utime.sleep_us(10)
+    utime.sleep_us(50)
     spi.send(0xC8)
     utime.sleep_us(10)
 spi = SPI(2, SPI.MASTER, baudrate=int(1000000000/66), polarity=0, phase=0,bits=32)
@@ -41,9 +41,9 @@ sensor.set_framesize(sensor.QVGA)
 sensor.skip_frames()
 x = 0
 while(True):
-    sendpackage(2,3,x)
+    sendpackage(0,1,x,3,0)
     time.sleep(100)
-    spi.send(0XD3)
+    #spi.send(0XD3)
     img = sensor.snapshot()
     led_control(x)
     x = x+1
