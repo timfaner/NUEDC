@@ -32,6 +32,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     volatile unsigned long current_time = 0;
     unsigned char temp[11]={0};
     unsigned char current_time_str[12]={0};
+    unsigned char begin_srt[2] = {13,0};
     int i;
     //避免序列中出现 \x00,\n
     if((send_counter == 0) || (send_counter == 10))
@@ -62,7 +63,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     data_type_str[0] = data_type;
     data_type_str[1] = NULL;
     
-
+    strcat(package,begin_srt);
     strcat(package,current_time_str);
     strcat(package,space);
     strcat(package,send_counter_str);
