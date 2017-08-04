@@ -57,7 +57,7 @@ uint8_t check_bit;
 uint8_t spi_check = 0;
 uint8_t rev_check = 0;
 extern uint8_t openmv_data_flow[9];
-extern uint8_t openmv_data[6];
+extern uint8_t openmv_data[7];
 extern volatile uint8_t spi_rx_idle;
 /* End user code. Do not edit comment generated here */
 
@@ -231,14 +231,16 @@ static void r_rspi0_callback_receiveend(void)
 	        check_bit = openmv_data_flow[1]^openmv_data_flow[2]^openmv_data_flow[3]^openmv_data_flow[4]^openmv_data_flow[5]^openmv_data_flow[6];
 
 	        if(check_bit == openmv_data_flow[7])
-	        {
+	        {   
 	        	openmv_data[0] = openmv_data_flow[1];
 	        	openmv_data[1] = openmv_data_flow[2];
 	        	openmv_data[2] = openmv_data_flow[3];
 	        	openmv_data[3] = openmv_data_flow[4];
 	        	openmv_data[4] = openmv_data_flow[5];
 	        	openmv_data[5] = openmv_data_flow[6];
+                openmv_data[6] = 1;
 	        }
+            
 	    }
 	    for(;;){
 	    	gp_rspi0_rx_address--;

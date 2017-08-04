@@ -64,6 +64,8 @@ User definitions
 #define Y 3
 #define LAND_FLAG 4
 
+#define DATA_READY
+
 #define MAV_STATUS_INIT 0
 #define MAV_STATUS_TAKEOFF 1
 #define MAV_STATUS_FLYING 2

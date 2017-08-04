@@ -64,7 +64,7 @@ Global variables and functions
 /*************spi parameters**********************/
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
-volatile uint8_t openmv_data[6] = {255,255,255,255,255,255};
+volatile uint8_t openmv_data[7] = {255,255,255,255,255,255,255};
 //openmv_data锛歟rror mav_statu x y landflag
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
 /*************************************************/
