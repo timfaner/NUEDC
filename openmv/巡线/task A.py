@@ -1,6 +1,6 @@
 
 import sensor, image, math, pyb, ustruct, utime
-from pyb import  SPI, Pin
+from pyb import  SPI, Pin,LED
 
 pin_start = Pin('P4', Pin.IN, Pin.PULL_DOWN)
 pin_task1 = Pin('P5', Pin.IN, Pin.PULL_DOWN)
@@ -8,8 +8,23 @@ pin_task2 = Pin('P6', Pin.IN, Pin.PULL_DOWN)
 
 spi = SPI(2, SPI.MASTER, baudrate=int(1000000000/66), polarity=0, phase=0,bits=32)
 x = 1
-GRAYSCALE_THRESHOLD = [(0, 100)]
+GRAYSCALE_THRESHOLD = [(0, 120)]
 
+
+red_led   = LED(1)
+green_led = LED(2)
+blue_led  = LED(3)
+ir_led    = LED(4)
+
+def led_control(x):
+    if   (x&1)==0: red_led.off()
+    elif (x&1)==1: red_led.on()
+    if   (x&2)==0: green_led.off()
+    elif (x&2)==2: green_led.on()
+    if   (x&4)==0: blue_led.off()
+    elif (x&4)==4: blue_led.on()
+    if   (x&8)==0: ir_led.off()
+    elif (x&8)==8: ir_led.on()
 #计算两直线交点
 def callinePoint(x1 = 1,y1 = 1,x2 = 1,y2 = 1,theta = 1):
     if theta ==0: theta+=1
@@ -55,8 +70,8 @@ def sendpackage(*arg):
 
 
 ROIS = [ # [ROI, weight]
-        (0, 100, 160, 20, 0.7), # You'll need to tweak the weights for your app
-        (0,  75, 160, 20, 0.3), # depending on how your robot is setup.
+        (0, 100, 160, 20, 0.7),
+        (0,  75, 160, 20, 0.3),
         (0,  50, 160, 20, 0.1),
         (0,  25, 160, 20, 0.1),
         (0,  0 , 160, 20, 0.1)
@@ -64,9 +79,10 @@ ROIS = [ # [ROI, weight]
 
 # Compute the weight divisor (we're computing this so you don't have to make weights add to 1).
 weight_sum = 0
-#for r in ROIS: weight_sum += r[4] # r[4] is the roi weight.
 
-# Camera setup...
+
+
+
 sensor.reset() # Initialize the camera sensor.
 sensor.set_pixformat(sensor.GRAYSCALE) # use grayscale.
 sensor.set_framesize(sensor.QQVGA) # use QQVGA for speed.
@@ -78,6 +94,10 @@ sensor.set_auto_exposure(False)
 
 while not pin_start.value():
     utime.sleep_ms(1)
+    led_control(1)
+
+led_control(0)
+#print('Begin')
 
 
 
@@ -141,7 +161,7 @@ while(True):
     or ismatchwith(old_mav_statu,mav_statu,4,4):error_flag = 0
 
     elif ismatchwith(old_mav_statu,mav_statu,0,0): error_flag = 2
-    
+
     elif old_mav_statu != 255 and mav_statu == 255:       #进入错误状态
         start = pyb.millis()
         error_statu = 1
