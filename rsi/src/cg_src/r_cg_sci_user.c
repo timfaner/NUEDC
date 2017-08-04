@@ -159,7 +159,7 @@ static void r_sci1_receive_interrupt(void)
 		sci1_rx_count--;
 	}
 
-	// receive(sci1_receive_char());
+	 receive(sci1_receive_char());
 }
 /***********************************************************************************************************************
 * Function Name: r_sci1_receiveerror_interrupt
