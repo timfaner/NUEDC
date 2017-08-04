@@ -106,6 +106,8 @@ old_mav_statu = 0
 error_flag = 255
 statu_number = 0
 land_flag = 0
+
+led_x = 0
 while(True):
     i = 0
     roi_list = [16 ,8, 4, 2, 1]
@@ -227,8 +229,8 @@ while(True):
     print(output)
     sendpackage(*output)
 
-
-
+    led_control(led_x)
+    led_x = led_x+1
     i = 0
 
 
