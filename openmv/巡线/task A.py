@@ -2,9 +2,9 @@
 import sensor, image, math, pyb, ustruct, utime
 from pyb import  SPI, Pin
 
-pin_start = Pin('P5', Pin.IN, Pin.PULL_DOWN)
-pin_task1 = Pin('P6', Pin.IN, Pin.PULL_DOWN)
-pin_task2 = Pin('P7', Pin.IN, Pin.PULL_DOWN)
+pin_start = Pin('P4', Pin.IN, Pin.PULL_DOWN)
+pin_task1 = Pin('P5', Pin.IN, Pin.PULL_DOWN)
+pin_task2 = Pin('P6', Pin.IN, Pin.PULL_DOWN)
 
 spi = SPI(2, SPI.MASTER, baudrate=int(1000000000/66), polarity=0, phase=0,bits=32)
 x = 1
@@ -44,12 +44,12 @@ def sendpackage(*arg):
     for data in Arg[1:]:
         check_bit = data ^ check_bit
     spi.send(0XD3)
-    utime.sleep_us(10)
+    utime.sleep_us(50)
     for data in Arg:
         spi.send(ustruct.pack("<B",data))
-        utime.sleep_us(10)
+        utime.sleep_us(50)
     spi.send(check_bit)
-    utime.sleep_us(10)
+    utime.sleep_us(50)
     spi.send(0xC8)
     utime.sleep_us(10)
 
