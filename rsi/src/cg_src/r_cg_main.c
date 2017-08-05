@@ -56,16 +56,20 @@ Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 
-
-
 #define TASK_HEIGHT 0.7
 #define TASK1_X_SPEED 0.3
 #define TASK1_X_SPEED_OVERFLY -0.15
+
+#define EVENT_TEMP_FLYING 3
+#define EVENT_TEMP_FORWARD 5
+#define EVENT_TEMP_BACKWARD 7
+#define EVENT_TEMP_LEFT 9
+#define EVENT_TEMP_RIGHT 11
 /*************spi parameters**********************/
 uint8_t rx_data[9];
 uint32_t * rx_buffer = rx_data;
 volatile uint8_t openmv_data[7] = {255,255,255,255,255,255,255};
-//openmv_data锛歟rror mav_statu x y landflag
+//openmv_data  rror mav_statu x y landflag
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
 /*************************************************/
 
@@ -73,8 +77,10 @@ volatile uint16_t system_event;
 volatile uint8_t system_error_code;
 
 /*********pid parameters********/
-double x_input= 0.0, x_output, setpoint=0.0,y_input = 0.0, y_output;
-double kp=5.0, ki=6.0, kd=3.0;
+double x_input= 0.0, x_output, setpoint=0.0,
+		y_input = 0.0, y_output;
+double x_kp=3.0, x_ki=0.0, x_kd=0.0,
+	   y_kp = 3.0, y_ki = 0.0, y_kd = 0.0;
 
 /***************functions******************/
 void task1(void);
@@ -89,12 +95,16 @@ void taskError(uint8_t);
 
 /*************ver2.0********************/
 int armflag=0;
-int* flag_data_updated;
-float** apm_attitude;
-float *apm_height = NULL;
+int * flag_data_updated = NULL;
+float** apm_attitude = NULL;
+float * apm_height = NULL;
 unsigned long last_heartbeat_time=0;
 unsigned long runtime=0;
 /***************************************/
+
+unsigned long temp_timer = 0;
+unsigned long last_temp_timer = 0;
+unsigned long time_change = 0;
 
 /* End user code. Do not edit comment generated here */
 
@@ -107,14 +117,12 @@ void R_MAIN_UserInit(void);
 ***********************************************************************************************************************/
 void main(void)
 {
-	int task_number = 0;
-//	float task[7] = {4.0, 5.0, 6.34, 6.789, 1.234, 2.4, 4.567};
+ 	uint8_t task_number = 0;
+	uint8_t uart = 5;
     /* Start user code. Do not edit comment generated here */
 	//initial
 	R_MAIN_UserInit();
     //get data from openmv
-	
-
 
     /* Start user code. Do not edit comment generated here */
     task_number = rasTaskSwitch();
@@ -133,9 +141,10 @@ void main(void)
 
 	mav_takeoff(TASK_HEIGHT);
 	systemEventUpdate(EVENT_TAKEOFF);
+///**************important******************/
 
-	while (*(apm_height) < TASK_HEIGHT-0.1)
-		delay_ms(40);
+//	while (*(apm_height) < TASK_HEIGHT-0.1)
+//		delay_ms(40);
 
 	rasCmdToOpenmv(task_number);
 
@@ -144,7 +153,6 @@ void main(void)
 	delay_ms(100);  //wait openmv initialize
 
 	debug_text("openmv initialized");
-
     switch (task_number){
     	case TASK1:
     		task1();
@@ -177,8 +185,9 @@ void R_MAIN_UserInit(void)
 	R_CMT2_Start();
 	R_CMT3_Start();
 	R_RSPI0_Start();
-	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
 	spiReceive(rx_buffer);
+	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
+
 
 	flag_data_updated=getFlagDataUpdated();
 	apm_attitude=getAttitude();
@@ -187,10 +196,12 @@ void R_MAIN_UserInit(void)
 	requestDataStream(500,50,50);
 	debug_text("\nRx Initialized\n");
 
-	xPID(&x_input, &x_output, &setpoint, kp, ki, kd, DIRECT);
+	xPID(&x_input, &x_output, &setpoint, x_kp, x_ki, x_kd, DIRECT);
 	xSetMode(AUTOMATIC);
-	yPID(&y_input, &y_output, &setpoint, kp, ki, kd, DIRECT);
+	yPID(&y_input, &y_output, &setpoint, y_kp, y_ki, y_kd, DIRECT);
 	ySetMode(AUTOMATIC);
+
+//	rasWirelessAdjustParameters();
     /* End user code. Do not edit comment generated here */
 }
 
@@ -225,91 +236,105 @@ void task1(void)
 	float x_offset, y_offset, x_speed, y_speed;
 	debug_text("\nworking task1\n");
 	while(1){
-		//if(land_ma=rk == landed)break;
+		temp_timer = millis();
 		runtime = millis();
 		if((runtime - last_heartbeat_time) >= 1000)
 		{
 			//send heartbeat
 			S_heartbeat();
 			last_heartbeat_time = runtime;
-		}	
-		if(openmv_data[ERROR_FLAG] != 0)
+		}
+//		delay_ms(20);
+		while(openmv_data[6] == 0);
+		if(openmv_data[6] == 1)
 		{
-			debug_text("error_flag = 0");
-			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-			if(openmv_data[LAND_FLAG] ==1){
+			if(openmv_data[ERROR_FLAG] == 0)
+			{
+				debug_text("error_flag = 0 ");
+				systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
+				if(openmv_data[LAND_FLAG] ==1)
+				{
+					systemEventUpdate(EVENT_LAND);
+					mav_land();
+					debug_text("land \n");
+			    }
+				else{
+					switch (openmv_data[MAV_STATUS]){
+						case MAV_STATUS_INIT:
+							break;
+						case MAV_STATUS_TAKEOFF:
+							systemEventUpdate(EVENT_XUNXIAN);
+							//dataFushion();
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
+							//send to apm
+							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
 
-				systemEventUpdate(EVENT_LAND);
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							debug_text("take off  ");
+							uart_5_printf(" speed :%f \n", y_speed);
+							break;
+						case MAV_STATUS_FLYING:
+							systemEventUpdate(EVENT_XUNXIAN);
 
-				mav_land();
-			
-				// while(land_mark != LANDED){
-				// 	updata land mark
-				// 	and updata EVENT_LANDED
-				// }
-			}
-			else{ 
-				switch (openmv_data[MAV_STATUS]){
-					case MAV_STATUS_INIT:
-						break;
-					case MAV_STATUS_TAKEOFF:
-						systemEventUpdate(EVENT_XUNXIAN);
-						//dataFushion();
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
-						//send to apm
-						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-						
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						break;
-					case MAV_STATUS_FLYING:
-						systemEventUpdate(EVENT_XUNXIAN);
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
 
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
+							//send to apm
+							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							debug_text("flying  ");
+							uart_5_printf(" speed :%f \n", y_speed);
+							break;
+						case MAV_STATUS_PRELAND:
+							systemEventUpdate(EVENT_PRELAND);
+							//dataFushion();
+							x_offset = rasX_offsetCalculate(openmv_data[3]);
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
 
-						//send to apm
-						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						break;
+							x_input = x_offset;
+							xCompute(&x_input);
+							x_speed = x_output;
+							//send to apm
 
-					case MAV_STATUS_PRELAND:
-						systemEventUpdate(EVENT_PRELAND);
-						//dataFushion();
-						x_offset = rasX_offsetCalculate(openmv_data[3]);
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
+							set_new_vel(x_speed, y_speed, TASK_HEIGHT);
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
+							debug_text("preland  ");
+							uart_5_printf(" x_speed :%f y_speed %f \n", x_speed,y_speed);
+							break;
+						case MAV_STATUS_OVERFLY:
+							systemEventUpdate(EVENT_OVERFLY);
+							set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
+							debug_text("over fly \n");
+							break;
+						case MAV_STATUS_ERROR:
+							break;
+					}
 
-						x_input = x_offset;
-						xCompute(&x_input);
-						x_speed = x_output;
-						//send to apm
-						
-						set_new_vel(x_speed, y_speed, TASK_HEIGHT);
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
-						break;
-					case MAV_STATUS_OVEFRFLY:
-						systemEventUpdate(EVENT_OVERFLY);
-						set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
-						break;
-					case MAV_STATUS_ERROR:
-						break;
 				}
-
 			}
+			else
+			{
+				taskError(openmv_data[ERROR_FLAG]);
+			}
+			openmv_data[6] = 0;
 		}
 		else
-			taskError(openmv_data[ERROR_FLAG]);
+		{
+			debug_text("wait new data\n");
+		}
+		time_change = millis() - temp_timer;
 	}
 
 }
@@ -327,16 +352,14 @@ void task4(void)
 }
 
 void taskError(uint8_t openmverror){
-	// land
-
-		runtime = millis();
-		if((runtime - last_heartbeat_time) >= 3000)
-		{
-			//send heartbeat
-			S_heartbeat();
-			last_heartbeat_time = runtime;			
-		}
-
+	debug_text("error!\n");
+	runtime = millis();
+	if((runtime - last_heartbeat_time) >= 1000)
+	{
+		//send heartbeat
+		S_heartbeat();
+		last_heartbeat_time = runtime;
+	}
 }
 void rasCmdToOpenmv(uint8_t flag)
 {
@@ -365,4 +388,60 @@ void rasCmdToOpenmv(uint8_t flag)
 		systemErrorUpdate(ERROR_TASK_NUMBER);
 	}
 }
+/*
+void rasWirelessAdjustParameters(void)
+{
+	unsigned char ch, *sci_Kp = &kp, *sci_Ki = &ki, *sci_Kd = &kd, temp[10];
+	uint8_t i = 0, flag = 0;
+	debug_text("Parameters adjust\n");
+	while(!sci5_receive_available());
+	SCI5_Serial_Receive(&ch, 1);
+	if(ch == 'Y')
+	{
+		debug_text("input Kp:\n");
+		while(!sci5_receive_available());
+		while(sci5_receive_available())
+		{
+			debug_text("rev ok\n");
+			SCI5_Serial_Receive(sci_Kp, 5);
+//			uart_5_printf("\n received ch %c \n", kp);
+//			if(*(sci_Kp+4) == '#') flag=1;
+//			while(!sci5_receive_available());
+		}
+		kp = atof(*sci_Kp);
+		uart_5_printf("\n received kp %f \n", kp);
+
+		debug_text("input Ki:\n");
+		while(!sci5_receive_available());
+		i = 0;
+		while(SCI5_Serial_Receive(&ch, 1) != '#')
+		{
+			*(sci_Ki + i) = ch;
+			i++;
+		}
+		ki = atof(*sci_Ki);
+		uart_5_printf("\n received ki %f \n", ki);
+
+		debug_text("input Kd:\n");
+		while(!sci5_receive_available());
+		i = 0;
+		while(SCI5_Serial_Receive(&ch, 1) != '#')
+		{
+			*(sci_Kp + i) = ch;
+			i++;
+		}
+		kd = atof(*sci_Kd);
+		uart_5_printf("\n received kd %c \n", ch);
+
+		debug_text("Parameters changed!\n");
+	}
+	else if(ch == 'N')
+	{
+		uart_5_printf("use the default parameters: kp %f ki %f kd %f\n",kp,ki,kd);
+	}
+	else
+	{
+		debug_text("cmd error\n");
+	}
+}  */
 /* End user code. Do not edit comment generated here */

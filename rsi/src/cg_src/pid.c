@@ -14,22 +14,22 @@ struct PID x_pid, y_pid;
 void xPID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection)
 {
-	
+
     x_pid.myOutput = Output;
     x_pid.myInput = Input;
     x_pid.mySetpoint = Setpoint;
 	x_pid.inAuto = false;
-	
+
 	xSetOutputLimits(-255, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    x_pid.SampleTime = 10;							//default Controller Sample Time is 0.1 seconds
+    x_pid.SampleTime = 40;							//default Controller Sample Time is 0.1 seconds
 
     xSetControllerDirection(ControllerDirection);
     xSetTunings(Kp, Ki, Kd);
 
     x_pid.lastTime = millis()-x_pid.SampleTime;
-	
+
 }
 void yPID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection)
@@ -43,7 +43,7 @@ void yPID(double* Input, double* Output, double* Setpoint,
 	ySetOutputLimits(-255, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    y_pid.SampleTime = 10;							//default Controller Sample Time is 0.1 seconds
+    y_pid.SampleTime = 40;							//default Controller Sample Time is 0.1 seconds
 
     ySetControllerDirection(ControllerDirection);
     ySetTunings(Kp, Ki, Kd);
@@ -65,7 +65,7 @@ int xCompute(double * Input)
    x_pid.myInput = Input;
    now = millis();
    timeChange = (now - x_pid.lastTime);
-   if(timeChange>=x_pid.SampleTime)
+   if(timeChange>=x_pid.SampleTime*0.5)
    {
       /*Compute all the working error variables*/
 	  double input, error, dInput, output;
@@ -99,7 +99,7 @@ int yCompute(double * Input)
    y_pid.myInput = Input;
    now = millis();
    timeChange = (now - y_pid.lastTime);
-   if(timeChange>=y_pid.SampleTime)
+   if(timeChange>=y_pid.SampleTime*0.5)
    {
       /*Compute all the working error variables*/
 	  double input, error, dInput, output;
@@ -109,18 +109,113 @@ int yCompute(double * Input)
       if(y_pid.ITerm > y_pid.outMax) y_pid.ITerm= y_pid.outMax;
       else if(y_pid.ITerm < y_pid.outMin) y_pid.ITerm= y_pid.outMin;
       dInput = (input - y_pid.lastInput);
- 
+
       /*Compute PID Output*/
       output = y_pid.kp * error + y_pid.ITerm- y_pid.kd * dInput;
-      
+
 	  if(output > y_pid.outMax) output = y_pid.outMax;
       else if(output < y_pid.outMin) output = y_pid.outMin;
 	  output = output *0.7/255;
 	  *y_pid.myOutput = output;
-	  
+
       /*Remember some variables for next time*/
       y_pid.lastInput = input;
       y_pid.lastTime = now;
+	  return true;
+   }
+   else return false;
+}
+
+int xComput(void)
+{
+	union{
+	signed int all;
+	unsigned char s[2];
+	}data;
+	char i, sci_send = 10;
+	double input, error, dInput, output;
+	unsigned long now, timeChange;
+    if(!x_pid.inAuto) return false;
+    now = millis();
+    timeChange = (now - x_pid.lastTime);
+    if(timeChange>=x_pid.SampleTime)
+    {
+      /*Compute all the working error variables*/
+//		SCI5_Serial_Send(&sci_send, 1);
+    while(sci5_receive_available() > 0)
+    {
+    SCI5_Serial_Receive(&data.s[i], 1);
+    i++;
+    }
+   	  i=0;
+	  input = (double)(data.all);
+      error = *x_pid.mySetpoint - input;
+      x_pid.ITerm+= (x_pid.ki * error);
+      if(x_pid.ITerm > x_pid.outMax) x_pid.ITerm= x_pid.outMax;
+      else if(x_pid.ITerm < x_pid.outMin)x_pid.ITerm= x_pid.outMin;
+      dInput = (input - x_pid.lastInput);
+ 
+      /*Compute PID Output*/
+      output = x_pid.kp * error + x_pid.ITerm- x_pid.kd * dInput;
+      
+	  if(output > x_pid.outMax) output = x_pid.outMax;
+      else if(output < x_pid.outMin) output = x_pid.outMin;
+	  *x_pid.myOutput = output;
+	  
+      /*Remember some variables for next time*/
+      x_pid.lastInput = input;
+      x_pid.lastTime = now;
+	//  Serial.print(*x_pid.myOutput);
+	//  Serial.print(",");
+	//  Serial.println(*myInput);
+	  return true;
+   }
+   else return false;
+}
+
+
+int yComput(void)
+{
+	union{
+	signed int all;
+	unsigned char s[2];
+	}data;
+	char i, sci_send = 10;
+	double input, error, dInput, output;
+	unsigned long now, timeChange;
+    if(!y_pid.inAuto) return false;
+    now = millis();
+    timeChange = (now - y_pid.lastTime);
+    if(timeChange>=y_pid.SampleTime)
+    {
+      /*Compute all the working error variables*/
+//		SCI5_Serial_Send(&sci_send, 1);
+    while(sci5_receive_available() > 0)
+    {
+    SCI5_Serial_Receive(&data.s[i], 1);
+    i++;
+    }
+   	  i=0;
+	  input = (double)(data.all);
+      error = *y_pid.mySetpoint - input;
+      y_pid.ITerm+= (y_pid.ki * error);
+      if(y_pid.ITerm > y_pid.outMax) y_pid.ITerm= y_pid.outMax;
+      else if(y_pid.ITerm < y_pid.outMin)y_pid.ITerm= y_pid.outMin;
+      dInput = (input - y_pid.lastInput);
+
+      /*Compute PID Output*/
+      output = y_pid.kp * error + y_pid.ITerm- y_pid.kd * dInput;
+
+	  if(output > y_pid.outMax) output = y_pid.outMax;
+      else if(output < y_pid.outMin) output = y_pid.outMin;
+	  *y_pid.myOutput = output;
+
+      /*Remember some variables for next time*/
+      y_pid.lastInput = input;
+      y_pid.lastTime = now;
+	//  Serial.print(*y_pid.myOutput);
+	//  Serial.print(",");
+	//  Serial.println(*myInput);
 	  return true;
    }
    else return false;
@@ -155,21 +250,21 @@ void ySetTunings(double Kp, double Ki, double Kd)
 {
 	double SampleTimeInSec;
    if (Kp<0 || Ki<0 || Kd<0) return;
- 
+
    y_pid.dispKp = Kp; y_pid.dispKi = Ki; y_pid.dispKd = Kd;
-   
+
    SampleTimeInSec = ((double)y_pid.SampleTime)/1000;
    y_pid.kp = Kp;
    y_pid.ki = Ki * SampleTimeInSec;
    y_pid.kd = Kd / SampleTimeInSec;
- 
+
   if(y_pid.controllerDirection ==REVERSE)
    {
       y_pid.kp = (0 - y_pid.kp);
       y_pid.ki = (0 - y_pid.ki);
       y_pid.kd = (0 - y_pid.kd);
    }
-}  
+}
 /* SetSampleTime(...) *********************************************************
  * sets the period, in Milliseconds, at which the calculation is performed	
  ******************************************************************************/
@@ -195,7 +290,7 @@ void ySetSampleTime(int NewSampleTime)
       y_pid.kd /= ratio;
       y_pid.SampleTime = (unsigned long)NewSampleTime;
    }
-} 
+}
 /* SetOutputLimits(...)****************************************************
  *     This function will be used far more often than SetInputLimits.  while
  *  the input to the controller will generally be in the 0-1023 range (which is
@@ -226,12 +321,12 @@ void ySetOutputLimits(double Min, double Max)
    if(Min >= Max) return;
    y_pid.outMin = Min;
    y_pid.outMax = Max;
- 
+
    if(y_pid.inAuto)
    {
 	   if(*y_pid.myOutput > y_pid.outMax) *y_pid.myOutput = y_pid.outMax;
 	   else if(*y_pid.myOutput < y_pid.outMin) *y_pid.myOutput = y_pid.outMin;
-	 
+
 	   if(y_pid.ITerm > y_pid.outMax) y_pid.ITerm= y_pid.outMax;
 	   else if(y_pid.ITerm < y_pid.outMin) y_pid.ITerm= y_pid.outMin;
    }
@@ -304,7 +399,7 @@ void ySetControllerDirection(int Direction)
 	  y_pid.kp = (0 - y_pid.kp);
       y_pid.ki = (0 - y_pid.ki);
       y_pid.kd = (0 - y_pid.kd);
-   }   
+   }
    y_pid.controllerDirection = Direction;
 }
 /* Status Funcions*************************************************************
