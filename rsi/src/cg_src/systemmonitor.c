@@ -21,18 +21,17 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     static uint8_t send_counter = 'a';
     uint8_t send_counter_str[4];
     uint8_t* arg_str = NULL;
-    unsigned char space[2] = {" "};
-    unsigned char endl[2] = {"\n"};
+    char space[2] = {" "};
+    char endl[2] = {"\n"};
 
     int length=0;
-    unsigned char * text=NULL;
+    char * text=NULL;
     
-    unsigned char data_type_str[4];
+    char data_type_str[4];
     
     volatile unsigned long current_time = 0;
-    unsigned char temp[11]={0};
-    unsigned char current_time_str[12]={0};
-    unsigned char begin_srt[2] = {13,0};
+    char temp[11]={0};
+    char current_time_str[12]={0};
     int i;
     //避免序列中出现 \x00,\n
     if((send_counter == 0) || (send_counter == 10))
@@ -63,7 +62,7 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     data_type_str[0] = data_type;
     data_type_str[1] = NULL;
     
-    strcat(package,begin_srt);
+
     strcat(package,current_time_str);
     strcat(package,space);
     strcat(package,send_counter_str);
@@ -89,14 +88,14 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
 
 
 void systemDataUpdate(float *data,int data_count,uint8_t data_type){
-    unsigned char package[12][20];
-    unsigned char send[50]={0} ;
+    char package[12][20];
+    char send[80]={0} ;
     int i = 0;
 
-    int length =0; //记得初始化
-    unsigned char * text = send;
+    int length = 0;
+    char * text = send;
     char comma[2] = ",";
-    
+
     for(i = 0;i< data_count-1;i++){
         sprintf(package[i],"%.2f",*(data+i));
         strcat(package[i],comma);
@@ -105,22 +104,19 @@ void systemDataUpdate(float *data,int data_count,uint8_t data_type){
     sprintf(package[data_count-1],"%.2f",*(data+data_count-1));
     strcat(send,package[data_count-1]);
 
-    
+
     while(*text!='\0'){
         length++;
         text++;
     }
+    length = 20;
     systemMonitor(send,length,data_type);
 }
 
 void systemEventUpdate(uint16_t new_event){
     uint8_t package[2];
     
-    if ((system_event & new_event) == 0)
-      system_event |= new_event;
-    else 
-      system_event ^= new_event;
-    
+    system_event |= new_event;
     package[0] =(uint8_t) (system_event & 0xff);
     package[1] =(uint8_t) ((system_event>>8) & 0xff);
     if(package[1]== 0)
