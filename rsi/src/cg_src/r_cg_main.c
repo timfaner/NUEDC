@@ -2,15 +2,15 @@
 * DISCLAIMER
 * This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products.
 * No other uses are authorized. This software is owned by Renesas Electronics Corporation and is protected under all
-* applicable laws, including copyright laws. 
+* applicable laws, including copyright laws.
 * THIS SOFTWARE IS PROVIDED "AS IS" AND RENESAS MAKES NO WARRANTIESREGARDING THIS SOFTWARE, WHETHER EXPRESS, IMPLIED
 * OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 * NON-INFRINGEMENT.  ALL SUCH WARRANTIES ARE EXPRESSLY DISCLAIMED.TO THE MAXIMUM EXTENT PERMITTED NOT PROHIBITED BY
 * LAW, NEITHER RENESAS ELECTRONICS CORPORATION NOR ANY OF ITS AFFILIATED COMPANIES SHALL BE LIABLE FOR ANY DIRECT,
 * INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES FOR ANY REASON RELATED TO THIS SOFTWARE, EVEN IF RENESAS OR
 * ITS AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-* Renesas reserves the right, without notice, to make changes to this software and to discontinue the availability 
-* of this software. By using this software, you agree to the additional terms and conditions found by accessing the 
+* Renesas reserves the right, without notice, to make changes to this software and to discontinue the availability
+* of this software. By using this software, you agree to the additional terms and conditions found by accessing the
 * following link:
 * http://www.renesas.com/disclaimer
 *
@@ -89,8 +89,8 @@ void taskError(uint8_t);
 
 /*************ver2.0********************/
 int armflag=0;
-int* flag_data_updated;
-float** apm_attitude;
+int* flag_data_updated = NULL;
+float** apm_attitude = NULL;
 float *apm_height = NULL;
 unsigned long last_heartbeat_time=0;
 unsigned long runtime=0;
@@ -113,7 +113,7 @@ void main(void)
 	//initial
 	R_MAIN_UserInit();
     //get data from openmv
-	
+
 
 
     /* Start user code. Do not edit comment generated here */
@@ -232,84 +232,90 @@ void task1(void)
 			//send heartbeat
 			S_heartbeat();
 			last_heartbeat_time = runtime;
-		}	
-		if(openmv_data[ERROR_FLAG] != 0)
-		{
-			debug_text("error_flag = 0");
-			systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-			if(openmv_data[LAND_FLAG] ==1){
-
-				systemEventUpdate(EVENT_LAND);
-
-				mav_land();
-			
-				// while(land_mark != LANDED){
-				// 	updata land mark
-				// 	and updata EVENT_LANDED
-				// }
-			}
-			else{ 
-				switch (openmv_data[MAV_STATUS]){
-					case MAV_STATUS_INIT:
-						break;
-					case MAV_STATUS_TAKEOFF:
-						systemEventUpdate(EVENT_XUNXIAN);
-						//dataFushion();
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
-						//send to apm
-						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-						
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						break;
-					case MAV_STATUS_FLYING:
-						systemEventUpdate(EVENT_XUNXIAN);
-
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
-
-						//send to apm
-						set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						break;
-
-					case MAV_STATUS_PRELAND:
-						systemEventUpdate(EVENT_PRELAND);
-						//dataFushion();
-						x_offset = rasX_offsetCalculate(openmv_data[3]);
-						y_offset = rasY_offsetCalculate(openmv_data[2]);
-						//pid
-						y_input = y_offset;
-						yCompute(&y_input);
-						y_speed = y_output;
-
-						x_input = x_offset;
-						xCompute(&x_input);
-						x_speed = x_output;
-						//send to apm
-						
-						set_new_vel(x_speed, y_speed, TASK_HEIGHT);
-						systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-						systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
-						break;
-					case MAV_STATUS_OVEFRFLY:
-						systemEventUpdate(EVENT_OVERFLY);
-						set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
-						break;
-					case MAV_STATUS_ERROR:
-						break;
-				}
-
-			}
 		}
+		if(openmv_data[6] == 1)
+		{
+			if(openmv_data[ERROR_FLAG] != 0)
+			{
+				debug_text("error_flag = 0");
+				systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
+				if(openmv_data[LAND_FLAG] ==1){
+
+					systemEventUpdate(EVENT_LAND);
+
+					mav_land();
+
+					// while(land_mark != LANDED){
+					// 	updata land mark
+					// 	and updata EVENT_LANDED
+					// }
+				}
+				else{
+					switch (openmv_data[MAV_STATUS]){
+						case MAV_STATUS_INIT:
+							break;
+						case MAV_STATUS_TAKEOFF:
+							systemEventUpdate(EVENT_XUNXIAN);
+							//dataFushion();
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
+							//send to apm
+							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
+
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							break;
+						case MAV_STATUS_FLYING:
+							systemEventUpdate(EVENT_XUNXIAN);
+
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
+
+							//send to apm
+							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							break;
+
+						case MAV_STATUS_PRELAND:
+							systemEventUpdate(EVENT_PRELAND);
+							//dataFushion();
+							x_offset = rasX_offsetCalculate(openmv_data[3]);
+							y_offset = rasY_offsetCalculate(openmv_data[2]);
+							//pid
+							y_input = y_offset;
+							yCompute(&y_input);
+							y_speed = y_output;
+
+							x_input = x_offset;
+							xCompute(&x_input);
+							x_speed = x_output;
+							//send to apm
+
+							set_new_vel(x_speed, y_speed, TASK_HEIGHT);
+							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+							systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
+							break;
+						case MAV_STATUS_OVERFLY:
+							systemEventUpdate(EVENT_OVERFLY);
+							set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
+							break;
+						case MAV_STATUS_ERROR:
+							break;
+					}
+
+				}
+			}
+			else
+				taskError(openmv_data[ERROR_FLAG]);
+			openmv_data[6] = 0;
+			}
 		else
-			taskError(openmv_data[ERROR_FLAG]);
+			debug_text("wait new data\n");
 	}
 
 }
@@ -330,11 +336,11 @@ void taskError(uint8_t openmverror){
 	// land
 
 		runtime = millis();
-		if((runtime - last_heartbeat_time) >= 3000)
+		if((runtime - last_heartbeat_time) >= 1000)
 		{
 			//send heartbeat
 			S_heartbeat();
-			last_heartbeat_time = runtime;			
+			last_heartbeat_time = runtime;
 		}
 
 }
