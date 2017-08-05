@@ -81,7 +81,7 @@ int xCompute(double * Input)
       
 	  if(output > x_pid.outMax) output = x_pid.outMax;
       else if(output < x_pid.outMin) output = x_pid.outMin;
-	  output = output *0.7/255;
+	  output = output *0.5/255;
 	  *x_pid.myOutput = output;
 	  
       /*Remember some variables for next time*/
@@ -115,8 +115,8 @@ int yCompute(double * Input)
 
 	  if(output > y_pid.outMax) output = y_pid.outMax;
       else if(output < y_pid.outMin) output = y_pid.outMin;
-	  output = output *0.7/255;
-	  *y_pid.myOutput = output;
+	  output = output *0.5/255;
+	  *y_pid.myOutput = -output;
 
       /*Remember some variables for next time*/
       y_pid.lastInput = input;
