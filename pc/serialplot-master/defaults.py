@@ -39,4 +39,4 @@ defaults = {'COMport': '',
  'startmax': 'no',
  'stopbits': 1,
  'stsbrwdth': 7,
- 'timeout':1}
+ 'timeout':0.1}

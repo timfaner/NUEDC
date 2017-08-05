@@ -3,7 +3,11 @@ The GraphTopLevel is a ttk.Frame class that gets packd into the root window when
 the configuration is complete. All the graph updating takes place in updateGraph
 '''
 tempk = []
-import threading,json
+serial_threading_lock = 0
+'''收发互斥锁'''
+import threading
+'''
+import json
 with open('./package_define.json','r') as a:
     cfg = json.load(a)
 
@@ -73,7 +77,7 @@ cfg_error ={\
     'ERROR_CANNOT_GET_DATA': 	 68,\
     'ERROR_WRONG_ORDER': 		 69,\
     }
-'''
+
 def dictOp(cfg,itemss):
     temp = -1
     for key in cfg:
@@ -188,6 +192,7 @@ class GraphFrame(ttk.Frame):
             self.root.line_x.append([])
         
         self.init_time = 0
+        self.root.serial_statu = tk.StringVar(self,value = 'Turn On')
         self.root.rsa_data = tk.StringVar(self,value = 'Null')
         self.root.rsa_type = tk.StringVar(self,value = 'Null')
         self.root.rsa_time = tk.IntVar(self,value = 0)
@@ -228,13 +233,24 @@ class GraphFrame(ttk.Frame):
         self.creatAndOpenSerial()
         self.root.ser.close()
         self.first_time = 1
+
+        self.root.serialcallback = self.serialcallback()
         if self.root.variables['log2file'] == 'on': 
                 self.root.logfile = open(self.root.variables['filename'], 'a') 
                 
         
+    def serialcallback(self):
+            if(self.root.ser.isOpen()):
+                self.root.serial_statu.set('Turn Off')
+            else:
+                self.root.serial_statu.set('Turn On')
+
+            
     def test(self,*arg):
         print('test')
-        print( self.root.ser.readline())
+        
+        print(self.root.ser.out_waiting)
+        
 
         
     def startpro(self):
@@ -248,6 +264,7 @@ class GraphFrame(ttk.Frame):
                 pass
             else:
                 self.root.ser.open()
+                self.serialcallback()
 
             if float(serial.VERSION[0:3]) < 3:
             #If we're executing with pySerial 2.x
@@ -266,7 +283,20 @@ class GraphFrame(ttk.Frame):
         
         if(1):  #不想退格了。。
             try:
-                ret = self.root.ser.readline()
+                global serial_threading_lock
+                ret = b''
+                    
+                if serial_threading_lock == 0:
+                    serial_threading_lock = 1 #收进程加锁
+                    ret = self.root.ser.readline()
+                    serial_threading_lock = 0 #释放锁
+                elif serial_threading_lock == -1:
+                    while  serial_threading_lock == -1:
+                        pass
+                    serial_threading_lock = 1 #收进程加锁
+                    ret = self.root.ser.readline()
+                    serial_threading_lock = 0 #释放锁
+                
                 if(ret == b''): #若没有读取到，则跳过并raise no package received
                     self.root.package_statu.set('串口超时未收到包')
                     #messagebox.showerror(message=('串口超时'))
@@ -276,6 +306,7 @@ class GraphFrame(ttk.Frame):
                     #更新数据接收率
                     
                     self.root.package_statu.set('正常')
+                        
                     self.root.package_content.set(str(ret))
                     self.root.count +=1
                     self.root.variables['refreshrate'].set(\
@@ -283,93 +314,93 @@ class GraphFrame(ttk.Frame):
                     #获取buff长度
                     bufflen = serialqueue(self.root.ser)
                     self.root.variables['buffsize'].set(value=str(bufflen)) 
+                        
                     
-                    self.rsa.setStream(ret)
-                    
-                    
-                    
-                    self.root.rsa_time.set(int(self.rsa.getTime()))
-                    if(self.first_time == 1):
-                        self.root.line_y = []
-                        self.root.line_x = []
-                        for line in range(9):
-                            self.root.line_y.append([])
-                            self.root.line_x.append([])
-                        self.last_time = time.time()
-                        self.init_time = self.root.rsa_time.get()
-                        try:
-                            if self.root.logfile.closed:
-                                self.root.logfile  = open(self.root.variables['filename'], 'a')
-                        except :
-                            pass
-                        self.first_time = 0
-
-                    self.root.time_for_graph.set(int(self.rsa.getTime())-self.init_time)
-                    if self.rsa.getType() == cfg1['MONITOR_EVENT']:
-                        self.root.rsa_event.set(self.rsa.getData())
-                    elif self.rsa.getType() == cfg1['MONITOR_ERROR']:
-                        self.root.rsa_error.set(dictOp(cfg_error,self.rsa.getData()))
+                    if not self.rsa.setStream(ret):
+                        pass    
                     else:
-                        self.root.rsa_data.set(self.rsa.getData())
-                        p1 = p2 = p3 = p4 = p5 = p6 = p7 = '0'
-                        
-                        if( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_X_SPEED'):
-                            p1 = self.rsa.getData()
-                            self.root.graphstr_y.set(p1)
-                            self.root.linenumber.set(0)
-                            self.root.graph_data_ready = 1
-                            
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_Y_SPEED'):
-                            p2 = self.rsa.getData()
-                            self.root.graphstr_y.set(p2)
-                            self.root.linenumber.set(1)
-                            self.root.graph_data_ready = 1
-                            
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_X_OFFSET_RESULT'):
-                            p3 = self.rsa.getData()
-                            self.root.graphstr_y.set(p3)
-                            self.root.linenumber.set(2)
-                            self.root.graph_data_ready = 1
-                            
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_Y_OFFSET_RESULT'):
-                            p4 = self.rsa.getData()
-                            self.root.graphstr_y.set(p4)
-                            self.root.linenumber.set(3)
-                            self.root.graph_data_ready = 1
-                            
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_ATTITUDE'):
-                            #pitch
-                            p5 = self.rsa.getData()[0]
-                            self.root.graphstr_y.set(p5)
-                            self.root.linenumber.set(4)
-                            self.root.graph_data_ready = 1
-                            #yaw
-                            p6 = self.rsa.getData()[1]
-                            self.root.graphstr_y.set(p6)
-                            self.root.linenumber.set(5)
-                            self.root.graph_data_ready = 1
-                            #row
-                            p7 = self.rsa.getData()[2]
-                            self.root.graphstr_y.set(p7)
-                            self.root.linenumber.set(6)
-                            self.root.graph_data_ready = 1
-                            
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_PARAMETERS'):
-                            self.root.rsa_params[0].set(self.rsa.getData()[0])
-                            self.root.rsa_params[1].set(self.rsa.getData()[1])
-                            self.root.rsa_params[2].set(self.rsa.getData()[2])
-                    
-                        
-                        elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_TASK_NUMBER'):
-                            self.root.rsa_params[3].set(self.rsa.getData())
-                    if self.root.variables['log2file'] == 'on' :
-                        self.templog += str(self.rsa.getType()) +' '+str(self.root.rsa_time.get())+' '\
-                        +  str(self.rsa.getData()) + '\n'
-
-                        if time.time() >self.last_time+1:
-                            self.root.logfile.write(self.templog)
-                            self.templog = ''
+                        self.root.rsa_time.set(int(self.rsa.getTime()))
+                        if(self.first_time == 1):
+                            self.root.line_y = []
+                            self.root.line_x = []
+                            for line in range(9):
+                                self.root.line_y.append([])
+                                self.root.line_x.append([])
                             self.last_time = time.time()
+                            self.init_time = self.root.rsa_time.get()
+                            try:
+                                if self.root.logfile.closed:
+                                    self.root.logfile  = open(self.root.variables['filename'], 'a')
+                            except :
+                                pass
+                            self.first_time = 0
+
+                        self.root.time_for_graph.set(int(self.rsa.getTime())-self.init_time)
+                        if self.rsa.getType() == cfg1['MONITOR_EVENT']:
+                            self.root.rsa_event.set(self.rsa.getData())
+                        elif self.rsa.getType() == cfg1['MONITOR_ERROR']:
+                            self.root.rsa_error.set(dictOp(cfg_error,self.rsa.getData()))
+                        else:
+                            self.root.rsa_data.set(self.rsa.getData())
+                            p1 = p2 = p3 = p4 = p5 = p6 = p7 = '0'
+                            
+                            if( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_X_SPEED'):
+                                p1 = self.rsa.getData()
+                                self.root.graphstr_y.set(p1)
+                                self.root.linenumber.set(0)
+                                self.root.graph_data_ready = 1
+                                
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_Y_SPEED'):
+                                p2 = self.rsa.getData()
+                                self.root.graphstr_y.set(p2)
+                                self.root.linenumber.set(1)
+                                self.root.graph_data_ready = 1
+                                
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_X_OFFSET_RESULT'):
+                                p3 = self.rsa.getData()
+                                self.root.graphstr_y.set(p3)
+                                self.root.linenumber.set(2)
+                                self.root.graph_data_ready = 1
+                                
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_Y_OFFSET_RESULT'):
+                                p4 = self.rsa.getData()
+                                self.root.graphstr_y.set(p4)
+                                self.root.linenumber.set(3)
+                                self.root.graph_data_ready = 1
+                                
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_ATTITUDE'):
+                                #pitch
+                                p5 = self.rsa.getData()[0]
+                                self.root.graphstr_y.set(p5)
+                                self.root.linenumber.set(4)
+                                self.root.graph_data_ready = 1
+                                #yaw
+                                p6 = self.rsa.getData()[1]
+                                self.root.graphstr_y.set(p6)
+                                self.root.linenumber.set(5)
+                                self.root.graph_data_ready = 1
+                                #row
+                                p7 = self.rsa.getData()[2]
+                                self.root.graphstr_y.set(p7)
+                                self.root.linenumber.set(6)
+                                self.root.graph_data_ready = 1
+                                
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_PID_PARAMETERS'):
+                                self.root.rsa_params[0].set(self.rsa.getData()[0])
+                                self.root.rsa_params[1].set(self.rsa.getData()[1])
+                                self.root.rsa_params[2].set(self.rsa.getData()[2])
+                        
+                            
+                            elif( dictOp(cfg_data,self.rsa.getType()) == 'DATA_TASK_NUMBER'):
+                                self.root.rsa_params[3].set(self.rsa.getData())
+                        if self.root.variables['log2file'] == 'on' :
+                            self.templog += str(self.rsa.getType()) +' '+str(self.root.rsa_time.get())+' '\
+                            +  str(self.rsa.getData()) + '\n'
+
+                            if time.time() >self.last_time+1:
+                                self.root.logfile.write(self.templog)
+                                self.templog = ''
+                                self.last_time = time.time()
                         
                             
                     self.root.count = 0
@@ -377,6 +408,7 @@ class GraphFrame(ttk.Frame):
                 self.first_time = 1
                 messagebox.showerror(message=('Start Failed:', e))
                 self.root.ser.close()
+                self.serialcallback()
                 self.stop_flag = 1
                 self.root.package_statu.set('串口关闭')
                 
@@ -388,6 +420,7 @@ class GraphFrame(ttk.Frame):
         else:
             if self.root.ser:
                 self.root.ser.close()
+                self.serialcallback()
             print("tock")
             self.first_time = 1
 
@@ -436,7 +469,7 @@ class GraphFrame(ttk.Frame):
             self.root.ser = serial.Serial(\
                 port=port,\
                 baudrate=str(self.root.variables['baud']),\
-                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout=int(self.root.variables['timeout'])) 
+                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout= float(self.root.variables['timeout'])) 
         else:
             first_space = self.root.variables['COMport'].index(' ')
             port = self.root.variables['COMport'][0:first_space].strip()
@@ -444,7 +477,7 @@ class GraphFrame(ttk.Frame):
             self.root.ser = serial.Serial(\
                 port=port,\
                 baudrate=str(self.root.variables['baud']),\
-                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout = int(self.root.variables['timeout']), rtscts=True, dsrdtr=True) 
+                bytesize=bytesize, parity=parity, stopbits=stopbits, timeout = float(self.root.variables['timeout'])) 
         io.DEFAULT_BUFFER_SIZE = 5000
             
         #Purge the buffer of any previous data
@@ -670,33 +703,37 @@ class RSA_STATUS:
     def setStream(self,serial_stream):
         self.stream = serial_stream
         try:
-            self.__spacepos = self.stream.find(32)
-            self.systime_raw = self.stream[0:self.__spacepos]
+            if self.stream[0] == 13 :#开始位
+                self.__spacepos = self.stream.find(32)
+                self.systime_raw = self.stream[0:self.__spacepos]
 
-            self.systime_old = self.systime
-            self.systime = int((self.systime_raw).decode('ascii'))
+                self.systime_old = self.systime
+                self.systime = int((self.systime_raw).decode('ascii'))
 
-            self.old_pkg_count = self.pkg_cnt
-            self.pkg_cnt = self.stream[self.__spacepos+1]
+                self.old_pkg_count = self.pkg_cnt
+                self.pkg_cnt = self.stream[self.__spacepos+1]
 
-            self.type = self.stream[self.__spacepos+2]
-        
-            self.data_raw = self.stream[self.__spacepos+3:self.stream.find(10)]
-        
-            if(self.type == cfg1['MONITOR_EVENT']):
-                if(len(self.data_raw)==2):
-                    self.data = self.data_raw[1]<<8 | self.data_raw[0]
+                self.type = self.stream[self.__spacepos+2]
+            
+                self.data_raw = self.stream[self.__spacepos+3:self.stream.find(10)]
+            
+                if(self.type == cfg1['MONITOR_EVENT']):
+                    if(len(self.data_raw)==2):
+                        self.data = self.data_raw[1]<<8 | self.data_raw[0]
+                    else:
+                        self.data = self.data_raw[0]
+                elif(self.type == cfg1['MONITOR_ERROR']):
+                    self.data = self.data_raw
                 else:
-                    self.data = self.data_raw[0]
-            elif(self.type == cfg1['MONITOR_ERROR']):
-                self.data = self.data_raw
+                    if self.data_raw.decode('ascii').find(',') == -1 :#数据中没有‘，’
+                        self.data = float(self.data_raw.decode('ascii'))
+                    else:
+                        self.data = self.data_raw.decode('ascii').split(',')
+                        for r in range(len(self.data)):
+                            self.data[r] = float(self.data[r])
+                return True
             else:
-                if self.data_raw.decode('ascii').find(',') == -1 :#数据中没有‘，’
-                    self.data = float(self.data_raw.decode('ascii'))
-                else:
-                    self.data = self.data_raw.decode('ascii').split(',')
-                    for r in range(len(self.data)):
-                        self.data[r] = float(self.data[r])
+                return False
         except Exception as e:
             #self.root.package_error.set("something wrong")
             pass
@@ -730,32 +767,86 @@ class Sendarea(ttk.LabelFrame):
         self.i = tk.Entry(self.pidlb,text = 'i',width = 4,fg = 'red')
         self.d = tk.Entry(self.pidlb,text = 'd',width = 4,fg = 'red')
         self.send = tk.Button(self.pidlb,text = 'Set!',command = self.sendpid )
+
+        self.sendcustompackage = tk.Label(self,text = '自定义消息')
+        self.entry = tk.Entry(self,width = 3)
+        self.btn = tk.Button(self,width = 5,text = '发送',command = self.sendcustommessage)
+
+        self.openserial = tk.Button(self,width = 8,textvariable = self.root.serial_statu,command = self.open,relief = 'raised',fg = 'blue')
+        
+
         self.p.grid(row = 0,column = 0,padx=1)
         self.i.grid(row = 0,column = 1,padx=1)
         self.d.grid(row = 0,column = 2,padx=1)
         self.send.grid(row = 1,column = 0,columnspan = 3)
 
-        self.pidlb.grid()
-        self.linkb.grid(row = 1)
+        self.pidlb.grid(row = 1,columnspan = 3)
+        self.linkb.grid(row = 2,columnspan = 3)
         
+        self.sendcustompackage.grid(row = 3,column = 0,padx=1)
+        self.entry.grid(row = 3,column = 1,padx=1)
+        self.btn.grid(row = 3,column = 2,padx=1)
+
+        self.openserial.grid(row = 0,column = 0,padx = 3,columnspan = 3)
         
-    def sendfunc(self):
-        text = self.l1.get()
+    def sendfunc(self,sendstr):
         if(self.root.ser.isOpen()):
-            self.root.ser.write()
+            
+            self.t = threading.Thread(target=self.sendit, args=(sendstr,) ,name = 'SerialSend')
+            self.t.start()
+        else:
+            messagebox.showerror(message=('Please Turn On Serial')) 
+
+    
+    def sendit(self,sendstr):
+        global serial_threading_lock
+        if float(serial.VERSION[0:3]) < 3:
+            #If we're executing with pySerial 2.x
+            serial.Serial.flushOutput(self.root.ser)
+        else:
+            #Otherwise we're using pySerial 3.x
+            serial.Serial.reset_output_buffer(self.root.ser)
+
+        
+        if serial_threading_lock == 0:
+            serial_threading_lock = -1 #发进程加锁
+            print(self.root.ser.write(sendstr.encode('ascii')))
+            serial_threading_lock = 0  #释放锁
+        elif serial_threading_lock == 1:
+            while  serial_threading_lock == 1:
+                    pass
+            serial_threading_lock = -1 #发进程加锁
+            print(self.root.ser.write(sendstr.encode('ascii')))
+            serial_threading_lock = 0 #释放锁
+        
+
+    
+    
     def sendpid(self):
-        if (self.p == 'p') and (self.i == 'i') and (self.d == 'd'):
+        if (self.p.get() == 'p') and (self.i.get() == 'i') and (self.d.get() == 'd') or (self.p.get() == '') and (self.i.get() == '') and (self.d.get() == ''):
             messagebox.showerror(message=('Please enter you params！'))    
-        else:        
-            self.p.delete()
-            self.i.delete()
-            self.d.delete()
+        else:
+        
+            self.p.delete(0,len(self.p.get()))
+            self.i.delete(0,len(self.i.get()))
+            self.d.delete(0,len(self.d.get()))
         
     def sendlink(self):
+        self.sendfunc('link')
+
+    def sendcustommessage(self):
+        sendstr = self.entry.get()
+        self.sendfunc(sendstr)
+        self.entry.delete(0,len(self.entry.get()))
+        
+    def open(self):
         if(self.root.ser.isOpen()):
-            self.root.ser.write('link'.encode('utf-8'))
+            self.root.ser.close()
+            self.root.serial_statu.set('Turn On')
         else:
-            messagebox.showerror(message=('Not Connect'))
+            self.root.ser.open()
+            self.root.serialcallback
+            self.root.serial_statu.set('Turn Off')
 class Graph(ttk.Frame):
 
     def __init__(self, parent, root,**kw):
