@@ -40,3 +40,5 @@ defaults = {'COMport': '',
  'stopbits': 1,
  'stsbrwdth': 7,
  'timeout':0.1}
+
+

@@ -227,7 +227,7 @@ class GraphFrame(ttk.Frame):
         
         StatusBar(self.root, self.root).grid(row = 2,column = 0,columnspan = 4,sticky = 's')
         
-        self.root.bind('<Return>',self.test)
+        #self.root.bind('<Return>',self.test)
         
         
         self.creatAndOpenSerial()
@@ -771,9 +771,9 @@ class Sendarea(ttk.LabelFrame):
         self.sendcustompackage = tk.Label(self,text = '自定义消息')
         self.entry = tk.Entry(self,width = 3)
         self.btn = tk.Button(self,width = 5,text = '发送',command = self.sendcustommessage)
-
+        self.btn.bind('<Return>',self.sendcustommessage)
         self.openserial = tk.Button(self,width = 8,textvariable = self.root.serial_statu,command = self.open,relief = 'raised',fg = 'blue')
-        
+        self.sendhistory = tk.Text(self,width = 20,height = 16)
 
         self.p.grid(row = 0,column = 0,padx=1)
         self.i.grid(row = 0,column = 1,padx=1)
@@ -788,7 +788,7 @@ class Sendarea(ttk.LabelFrame):
         self.btn.grid(row = 3,column = 2,padx=1)
 
         self.openserial.grid(row = 0,column = 0,padx = 3,columnspan = 3)
-        
+        self.sendhistory.grid(row = 4,column = 0,columnspan = 3)
     def sendfunc(self,sendstr):
         if(self.root.ser.isOpen()):
             
@@ -838,7 +838,7 @@ class Sendarea(ttk.LabelFrame):
         sendstr = self.entry.get()
         self.sendfunc(sendstr)
         self.entry.delete(0,len(self.entry.get()))
-        
+
     def open(self):
         if(self.root.ser.isOpen()):
             self.root.ser.close()
