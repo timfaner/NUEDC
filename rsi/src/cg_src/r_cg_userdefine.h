@@ -48,15 +48,21 @@ User definitions
 #define RSA_TASK_SWICH1 		PORT7.PIDR.BIT.B6
 #define RSA_TASK_SWICH2 		PORT7.PIDR.BIT.B5
 
-/*****************const define****************/
+/*****const define********/
 #define Pi 3.1416
+#define TASK_HEIGHT 0.7
+#define TASK1_X_SPEED 0.3
+#define TASK1_X_SPEED_OVERFLY -0.15
 
-/***************task flag*******************/
+
+/*********task flags************/
 #define TASK1  1
 #define TASK2  2
 #define TASK3  3
 #define TASK4  4
-/*******************************************/
+
+
+/***********data refering*************/
 //define openmv_data means
 #define ERROR_FLAG 0
 #define MAV_STATUS 1
@@ -64,8 +70,13 @@ User definitions
 #define Y 3
 #define LAND_FLAG 4
 
-#define DATA_READY
+#define DATA_READY 6
 
+
+/********error threshold*******/
+#define TASK_ERROR_THRESHOLD 40
+
+/*********EVENT & DATA & ERROR*****/
 #define MAV_STATUS_INIT 0
 #define MAV_STATUS_TAKEOFF 1
 #define MAV_STATUS_FLYING 2
@@ -80,17 +91,9 @@ User definitions
 #define EVENT_ARMCHECK 			8
 #define EVENT_TAKEOFF 			16
 #define EVENT_OPENMVBOOTUP 		32
-//#define EVENT_TRACKING 			64
-//#define EVENT_LOSTLINE			128
-//#define EVENT_PRELAND 			256
-//#define EVENT_LANDING 			512
-//#define EVENT_LANDED  			1024
-//#define EVENT_OVERFLY 			2048
-//#define EVENT_TASK1 			4096
-//#define EVENT_TASK2 			8192
-//#define EVENT_TASK3 			16384
-//#define EVENT_TASK4 			32768
-
+#define EVENT_WAIT_NEW_DATA     64
+#define EVENT_SEND_HEARTBEAT    128
+#define EVENT_LANDED            256
 
 #define EVENT_XUNXIAN 1
 #define EVENT_PRELAND 1
@@ -100,11 +103,14 @@ User definitions
 
 
 //define system error
-#define ERROR_TASK_NUMBER		 65
-#define ERROR_SPI_DATA 	  		 66
-#define ERROR_UNKNOWN_PLACE 	 67
-#define ERROR_CANNOT_GET_DATA 	 68
-#define ERROR_WRONG_ORDER  		 69
+#define ERROR_TASK_NUMBER			 65
+#define ERROR_SPI_DATA 	  			 66
+#define ERROR_UNKNOWN_PLACE 		 67
+#define ERROR_CANNOT_GET_DATA 		 68
+#define ERROR_WRONG_ORDER  			 69
+#define ERROR_TASK_TIMEOUT			 70
+#define ERROR_OPENMV_CRASH      	 71
+#define ERROR_OPENMV_DATA_ABNORMAL   72
 
 //define systerm data
 #define DATA_OPENMV  			 97

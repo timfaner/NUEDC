@@ -46,6 +46,7 @@ Includes
 #include "math.h"
 
 #include "pid.h"
+#include "buzzer.h"
 #include "systemmonitor.h"
 #include "offset_calculate.h"
 /* End user code. Do not edit comment generated here */
@@ -120,10 +121,16 @@ void main(void)
 	uint8_t cmd = 0;
 	uint8_t arm_flag=0;
 	uint8_t takeoff_flag=0;
+	float x_speed = 0.0, y_speed = 0.0;
+	float count = 0;
 
+
+	uint8_t test = 0;
 	//initial
 	R_MAIN_UserInit();
    /* Start user code. Do not edit comment generated here */
+//	alarm();
+
     task_number = rasTaskSwitch();
     rasCmdToOpenmv(task_number); //切换openmv任务
 	systemDataUpdate(&task_number,1,DATA_TASK_NUMBER);
@@ -147,7 +154,7 @@ void main(void)
 				armcheck();
 				arm_flag=1;
 				systemEventUpdate(EVENT_ARMCHECK);
-//				debug_text("arm check!\n");
+				debug_text("arm check!\n");
 				cmd = '\0';
 			}
 			if(cmd == 't')
@@ -155,7 +162,7 @@ void main(void)
 				mav_takeoff(TASK_HEIGHT);
 				takeoff_flag=1;
 				systemEventUpdate(EVENT_TAKEOFF);
-//				debug_text("take off!\n");
+				debug_text("take off!\n");
 				cmd = '\0';
 			}
 		}
@@ -164,10 +171,13 @@ void main(void)
 
 ///**************important******************/
 
-//	while (*(apm_height) < TASK_HEIGHT-0.1)
-//		delay_ms(40);
+	while (*(apm_height) < TASK_HEIGHT-0.1)
+		{
+			delay_ms(100);
+			uart_5_printf("height: %f  wait for Set Height\n",*apm_height);
+		}
 
-	rasCmdToOpenmv(task_number);
+//	rasCmdToOpenmv(task_number);
 
 	OPENMV_WORK_ENABLE_PIN = 1; //通知openmv开始工作 将该引脚置高
 	systemEventUpdate(EVENT_OPENMVBOOTUP);
@@ -256,7 +266,8 @@ void task1(void)
 	int land_mark = 0;
 	float x_offset = 0.0, y_offset = 0.0,
 			x_speed = 0.0, y_speed =0.0;
-//	debug_text("\nworking task1\n");
+	float preland_height=0;
+	debug_text("\nworking task1\n");
 	while(1)
 	{
 		task_cycle_timer = millis();
@@ -283,13 +294,19 @@ void task1(void)
 		{
 			if(openmv_data[ERROR_FLAG] == 0)
 			{
-				debug_text(" no error \n ");
-				systemMonitor(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
+//				debug_text(" no error \n ");
+//				systemDataUpdate(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
 				if(openmv_data[LAND_FLAG] ==1)
 				{
 					systemEventUpdate(EVENT_LAND);
-					mav_land();
-					debug_text("\n landed \n");
+					while(1)
+					{
+						mav_land();
+						systemEventUpdate(EVENT_LANDED);
+						debug_text("\n landed \n");
+						delay_ms(200);
+					}
+
 			    }
 				else
 				{
@@ -298,7 +315,7 @@ void task1(void)
 						case MAV_STATUS_INIT:
 							break;
 						case MAV_STATUS_TAKEOFF:
-							systemEventUpdate(EVENT_XUNXIAN);
+//							systemEventUpdate(EVENT_XUNXIAN);
 							//dataFushion();
 							y_offset = rasY_offsetCalculate(openmv_data[2]);
 							//pid
@@ -307,13 +324,14 @@ void task1(void)
 							y_speed = y_output;
 							//send to apm
 							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-
-							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+//							y_offset = y_offset*0.01;
+//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
+//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
 							debug_text("take off status ");
 							uart_5_printf(" speed :%f \n", y_speed);
 							break;
 						case MAV_STATUS_FLYING:
-							systemEventUpdate(EVENT_XUNXIAN);
+//							systemEventUpdate(EVENT_XUNXIAN);
 
 							y_offset = rasY_offsetCalculate(openmv_data[2]);
 							//pid
@@ -323,12 +341,18 @@ void task1(void)
 
 							//send to apm
 							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+//							y_offset = y_offset*0.01;
+//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
+//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
 							debug_text("flying  ");
 							uart_5_printf(" speed :%f \n", y_speed);
 							break;
 						case MAV_STATUS_PRELAND:
-							systemEventUpdate(EVENT_PRELAND);
+							preland_height+=0.005;
+							if(TASK_HEIGHT-preland_height<=0.4){
+								preland_height=TASK_HEIGHT-0.4;
+							}
+//							systemEventUpdate(EVENT_PRELAND);
 							//dataFushion();
 							x_offset = rasX_offsetCalculate(openmv_data[3]);
 							y_offset = rasY_offsetCalculate(openmv_data[2]);
@@ -342,14 +366,18 @@ void task1(void)
 							x_speed = x_output;
 							//send to apm
 
-							set_new_vel(x_speed, y_speed, TASK_HEIGHT);
-							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-							systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
+							set_new_vel(x_speed, y_speed, TASK_HEIGHT-preland_height);
+//							y_offset = y_offset*0.01;
+//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
+//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
+//							x_offset = x_offset*0.01;
+//							systemDataUpdate(&x_offset, 1, DATA_X_OFFSET_RESULT);
+//							systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
 							debug_text("preland  ");
-							uart_5_printf(" x_speed :%f y_speed %f \n", x_speed,y_speed);
+							uart_5_printf(" x_speed :%f y_speed %f   height %f \n", x_speed,y_speed,TASK_HEIGHT-preland_height);
 							break;
 						case MAV_STATUS_OVERFLY:
-							systemEventUpdate(EVENT_OVERFLY);
+//							systemEventUpdate(EVENT_OVERFLY);
 							set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
 							debug_text("over fly \n");
 							break;
@@ -361,6 +389,8 @@ void task1(void)
 			else
 			{
 				taskError(openmv_data[ERROR_FLAG]);
+//				debug_text("\nerror status\n");
+				uart_5_printf("error status %d \n",openmv_data[ERROR_FLAG]);
 			}
 			//update last_error_flag
 			last_error_flag=openmv_data[ERROR_FLAG];
@@ -370,12 +400,12 @@ void task1(void)
 		else
 		{
 			debug_text("wait new data\n");
-			systemEventUpdate(EVENT_WAIT_NEW_DATA);
+//			systemEventUpdate(EVENT_WAIT_NEW_DATA);
 		}
 		task_cycle_time_monitor = millis() - task_cycle_timer;
 		if(task_cycle_time_monitor > 60)
 		{
-			systemErrorUpdate(ERROR_TASK_TIMEOUT);
+//			systemErrorUpdate(ERROR_TASK_TIMEOUT);
 			debug_text("task timeout: %d\n",task_cycle_time_monitor);
 		}
 	} //task loop
@@ -396,19 +426,20 @@ void task4(void)
 
 void taskError(uint8_t openmverror){
 	static int error_count=1;
-	if(last_error_flag==1){
+	if(last_error_flag==1)
+	{
 		error_count++;
 	}
 	else{
 		error_count=0;
 	}
 	debug_text("[taskError()] Task error!\n");
-	systemErrorUpdate(ERROR_SPI_DATA);
+//	systemErrorUpdate(ERROR_SPI_DATA);
 	if(error_count >= TASK_ERROR_THRESHOLD)
 	{
 		mav_land();
 		debug_text("\n[taskError()] error overflow! forced landing \n");
-		systemErrorUpdate(ERROR_OPENMV_DATA_ABNORMAL);
+//		systemErrorUpdate(ERROR_OPENMV_DATA_ABNORMAL);
 	}
 }
 void rasCmdToOpenmv(uint8_t flag)
