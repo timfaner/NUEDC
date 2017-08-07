@@ -8,7 +8,7 @@ pin_task2 = Pin('P6', Pin.IN, Pin.PULL_DOWN)
 
 spi = SPI(2, SPI.MASTER, baudrate=int(1000000000/66), polarity=0, phase=0,bits=32)
 x = 1
-GRAYSCALE_THRESHOLD = [(0, 120)]
+GRAYSCALE_THRESHOLD = [(0, 100)]
 
 
 red_led   = LED(1)
@@ -47,7 +47,7 @@ def ismatchwith(a,b,c,d):
     else: return False;
 
 def isaround(x,y):
-    if abs(x - 80)<4 and abs(y-60) < 4:
+    if abs(x - 80)<10 and abs(y-60) < 20:
         return True
     else:return False
 
@@ -77,30 +77,29 @@ ROIS = [ # [ROI, weight]
         (0,  0 , 160, 20, 0.1)
        ]
 
-# Compute the weight divisor (we're computing this so you don't have to make weights add to 1).
 weight_sum = 0
 
 
-
-
-sensor.reset() # Initialize the camera sensor.
-sensor.set_pixformat(sensor.GRAYSCALE) # use grayscale.
-sensor.set_framesize(sensor.QQVGA) # use QQVGA for speed.
-sensor.skip_frames(time = 2000) # Let new settings take affect.
-
-sensor.set_auto_gain(False) # must be turned off for color tracking
-sensor.set_auto_whitebal(False) # must be turned off for color tracking
-sensor.set_auto_exposure(False)
 
 while not pin_start.value():
     utime.sleep_ms(1)
     led_control(1)
 
+
+sensor.reset() # Initialize the camera
+sensor.set_pixformat(sensor.GRAYSCALE) # use grayscale.
+sensor.set_framesize(sensor.QQVGA) # use QQVGA for speed.
+sensor.skip_frames(time = 400) # Let new settings take affect.
+
+sensor.set_auto_gain(False,value = 910) # must be turned off for color tracking
+sensor.set_auto_whitebal(False) # must be turned off for color tracking
+sensor.set_auto_exposure(False)
+
 led_control(0)
 #print('Begin')
 
 
-
+land_counter  = 0
 mav_statu = 0
 old_mav_statu = 0
 error_flag = 255
@@ -223,7 +222,9 @@ while(True):
             pass
 
     if mav_statu == 3 and isaround(output[2],output[3]):
-        land_flag = 1
+        land_counter  += 1
+        if land_counter == 4:
+            land_flag = 1
 
 
     print(output)
