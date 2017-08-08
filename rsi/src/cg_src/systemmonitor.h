@@ -1,3 +1,4 @@
+#include "r_cg_macrodriver.h"
 #define MONITOR_ERROR 1
 #define MONITOR_EVENT 2
 #define MONITOR_DATA_TASK_NUMBER 3

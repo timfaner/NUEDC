@@ -23,10 +23,11 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for RSPI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/8/8
 ***********************************************************************************************************************/
 #ifndef RSPI_H
 #define RSPI_H
+
 #include "r_cg_macrodriver.h"
 /***********************************************************************************************************************
 Macro definitions (Register bit)

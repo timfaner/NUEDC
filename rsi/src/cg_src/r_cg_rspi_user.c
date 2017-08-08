@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for RSPI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/8/8
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -59,6 +59,8 @@ uint8_t rev_check = 0;
 extern uint8_t openmv_data_flow[9];
 extern uint8_t openmv_data[7];
 extern volatile uint8_t spi_rx_idle;
+extern volatile uint8_t openmv_error_flag;
+extern volatile uint8_t openmv_wrong_order;
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
@@ -124,6 +126,8 @@ static void r_rspi0_receive_interrupt(void)
 
             if (g_rspi0_rx_length == g_rspi0_rx_count)
             {
+                /* Disable receive interrupt */
+//                RSPI0.SPCR.BIT.SPRIE = 0U;
                 r_rspi0_callback_receiveend();
                 break;
             }
@@ -199,7 +203,6 @@ static void r_rspi0_idle_interrupt(void)
 static void r_rspi0_callback_transmitend(void)
 {
     /* Start user code. Do not edit comment generated here */
-
     /* End user code. Do not edit comment generated here */
 }
 
@@ -224,14 +227,14 @@ static void r_rspi0_callback_receiveend(void)
 		openmv_data_flow[5] = openmv_data_flow[5+1];
 		openmv_data_flow[6] = openmv_data_flow[6+1];
 		openmv_data_flow[7] = openmv_data_flow[7+1];
-		openmv_data_flow[8] = ((1& temp) << 7) | (temp >>1);
+		openmv_data_flow[8] = temp; //((1& temp) << 7) | (temp >>1);
 
 
 	    if(openmv_data_flow[0] == 0xd3 && openmv_data_flow[8] == 0xc8){
 	        check_bit = openmv_data_flow[1]^openmv_data_flow[2]^openmv_data_flow[3]^openmv_data_flow[4]^openmv_data_flow[5]^openmv_data_flow[6];
 
 	        if(check_bit == openmv_data_flow[7])
-	        {   
+	        {
 	        	openmv_data[0] = openmv_data_flow[1];
 	        	openmv_data[1] = openmv_data_flow[2];
 	        	openmv_data[2] = openmv_data_flow[3];
@@ -239,8 +242,14 @@ static void r_rspi0_callback_receiveend(void)
 	        	openmv_data[4] = openmv_data_flow[5];
 	        	openmv_data[5] = openmv_data_flow[6];
                 openmv_data[6] = 1;
+                if(openmv_data[ERROR_FLAG] != 0)
+                {
+                	openmv_error_flag = openmv_data[ERROR_FLAG];
+                	if(openmv_error_flag ==3)
+                		openmv_wrong_order = 1;
+                }
 	        }
-            
+
 	    }
 	    for(;;){
 	    	gp_rspi0_rx_address--;

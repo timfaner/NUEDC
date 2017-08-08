@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for RSPI module.
-* Creation Date: 2017/7/22
+* Creation Date: 2017/8/8
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -74,10 +74,8 @@ void R_RSPI0_Create(void)
     RSPI0.SPCR.BIT.SPE = 0U;
 
     /* Set control registers */
-    RSPI0.SPPCR.BYTE = _00_RSPI_LOOPBACK_DISABLED | _00_RSPI_LOOPBACK2_DISABLED;
     RSPI0.SPDCR.BYTE = _00_RSPI_ACCESS_WORD | _00_RSPI_FRAMES_1;
     RSPI0.SPSCR.BYTE = _00_RSPI_SEQUENCE_LENGTH_1;
-    RSPI0.SSLP.BYTE = _00_RSPI_SSL0_POLARITY_LOW;
     RSPI0.SPCR2.BYTE = _00_RSPI_PARITY_DISABLE;
     RSPI0.SPCMD0.WORD = _0001_RSPI_RSPCK_SAMPLING_EVEN | _0000_RSPI_RSPCK_POLARITY_LOW | 
                         _0400_RSPI_DATA_LENGTH_BITS_8 | _0000_RSPI_MSB_FIRST;
@@ -97,11 +95,7 @@ void R_RSPI0_Create(void)
     MPC.P22PFS.BYTE = 0x0DU;
     PORT2.PMR.BYTE |= 0x04U;
 
-    /* Set SSLA0 pin */
-    MPC.P30PFS.BYTE = 0x0DU;
-    PORT3.PMR.BYTE |= 0x01U;
-
-    RSPI0.SPCR.BYTE = _00_RSPI_MODE_SPI | _00_RSPI_FULL_DUPLEX_SYNCHRONOUS | _00_RSPI_SLAVE_MODE;
+    RSPI0.SPCR.BYTE = _01_RSPI_MODE_CLOCK_SYNCHRONOUS | _00_RSPI_FULL_DUPLEX_SYNCHRONOUS | _00_RSPI_SLAVE_MODE;
 }
 
 /***********************************************************************************************************************
@@ -123,9 +117,10 @@ void R_RSPI0_Start(void)
     /* Clear error sources */
     dummy = RSPI0.SPSR.BYTE;
     RSPI0.SPSR.BYTE = 0xA0U;
-  /***********************************/
+
     /* Disable idle interrupt */
     RSPI0.SPCR2.BIT.SPIIE = 0U;
+
     /* Enable transmit interrupt */
     RSPI0.SPCR.BIT.SPTIE = 1U;
 
@@ -137,7 +132,6 @@ void R_RSPI0_Start(void)
 
     /* Enable RSPI function */
     RSPI0.SPCR.BIT.SPE = 1U;
-   /***********************************/
 }
 
 /***********************************************************************************************************************
@@ -192,7 +186,7 @@ MD_STATUS R_RSPI0_Send_Receive(uint32_t * const tx_buf, uint16_t tx_num, uint32_
     return (status);
 }
 
-/* Start user cve(ode for adding. Do not edit comment generated here */
+/* Start user code for adding. Do not edit comment generated here */
 void spiReceive (uint32_t * const rx_buf)
 {
 	uint32_t tx_buf = 0;

@@ -10,6 +10,6 @@
 
 
 void alarm(void);
-
+void alarm_bibi(void);
 
 #endif /* CG_SRC_BUZZER_H_ */

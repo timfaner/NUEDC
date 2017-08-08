@@ -30,7 +30,6 @@ void systemMonitor(uint8_t *arg,int arg_count,uint8_t data_type){
     unsigned char data_type_str[4];
     
     volatile unsigned long current_time = 0;
-    unsigned char temp[11]={0};
     unsigned char current_time_str[12]={0};
     unsigned char begin_srt[2] = {13,0};
     int i;

@@ -39,16 +39,12 @@ Includes
 #include "r_cg_cgc.h"
 #include "r_cg_cmt.h"
 #include "r_cg_sci.h"
+#include "r_cg_rspi.h"
 /* Start user code for include. Do not edit comment generated here */
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
 #include "math.h"
-
-#include "pid.h"
-#include "buzzer.h"
-#include "systemmonitor.h"
-#include "offset_calculate.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -57,11 +53,9 @@ Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 
-
-
 /*************spi parameters**********************/
-uint8_t rx_data[9];
-uint32_t * rx_buffer = rx_data;
+uint8_t rx_data = 0;
+uint8_t * rx_buffer = &rx_data;
 volatile uint8_t openmv_data[7] = {255,255,255,255,255,255,255};
 //openmv_data  rror mav_statu x y landflag
 volatile uint8_t openmv_data_flow[9] = {0,1,2,3,4,5,6,7,8};
@@ -78,14 +72,10 @@ double x_kp=7.50, x_ki=0.0, x_kd=0.0,
 	   y_kp = 7.50, y_ki = 0.0, y_kd = 0.0;
 
 /***************functions******************/
-void task1(void);
 void task2(void);
 void task3(void);
 void task4(void);
-int rasTaskSwitch(void);
-void rasCmdToOpenmv(uint8_t flag);
 //void rasWirelessAdjustParameters(void);
-void taskError(uint8_t);
 /******************************************/
 
 /************get data from apm*************/
@@ -104,6 +94,9 @@ unsigned long task_cycle_time_monitor = 0;
 
 /**********flag for error handle*********/
 uint8_t last_error_flag=0;
+uint16_t flying_count=0;
+volatile uint8_t openmv_error_flag = 0;
+volatile uint8_t openmv_wrong_order = 0;
 
 /* End user code. Do not edit comment generated here */
 
@@ -117,29 +110,18 @@ void R_MAIN_UserInit(void);
 void main(void)
 {
  	uint8_t task_number = 0;
-	uint8_t uart = 5;
 	uint8_t cmd = 0;
 	uint8_t arm_flag=0;
 	uint8_t takeoff_flag=0;
-	float x_speed = 0.0, y_speed = 0.0;
-	float count = 0;
 
-
-	uint8_t test = 0;
 	//initial
 	R_MAIN_UserInit();
    /* Start user code. Do not edit comment generated here */
-//	alarm();
-
     task_number = rasTaskSwitch();
     rasCmdToOpenmv(task_number); //切换openmv任务
-	systemDataUpdate(&task_number,1,DATA_TASK_NUMBER);
+//	systemDataUpdate(&task_number,1,DATA_TASK_NUMBER);
 
-	//添加开始开关
-	while(RSA_WORK_ENABLE_PIN ==1){
-		delay_ms(10);
-	}
-	systemEventUpdate(EVENT_STARTBUTTON);
+//	systemEventUpdate(EVENT_STARTBUTTON);
 
 	//倒计时
 	//wait command cycle
@@ -149,39 +131,45 @@ void main(void)
 			SCI5_Serial_Receive(&cmd, 1);
 			if(cmd == 'a')
 			{
-				set_pid(0, 1200, 400, 200, 500);
-				set_pid(1, 1200, 400, 300, 500);
-				armcheck();
-				arm_flag=1;
+				set_pid(0, 1800.0f, 400.0f, 150.0f, 600.0f);
+				set_pid(1, 2000.0f, 300.0f, 200.0f, 400.0f);
+				if(armcheck())
+				{
+					arm_flag=1;
+				}
 				systemEventUpdate(EVENT_ARMCHECK);
 				debug_text("arm check!\n");
 				cmd = '\0';
 			}
 			if(cmd == 't')
 			{
-				mav_takeoff(TASK_HEIGHT);
-				takeoff_flag=1;
+				if(mav_takeoff(TASK_HEIGHT))
+				{
+					takeoff_flag=1;
+				}
 				systemEventUpdate(EVENT_TAKEOFF);
 				debug_text("take off!\n");
 				cmd = '\0';
 			}
 		}
-		delay_ms(1000);
+		delay_ms(600);
 	}
 
 ///**************important******************/
-
 	while (*(apm_height) < TASK_HEIGHT-0.1)
 		{
 			delay_ms(100);
 			uart_5_printf("height: %f  wait for Set Height\n",*apm_height);
 		}
+	//set point
+	set_new_vel(0.0, 0.0, TASK_HEIGHT);
 
-//	rasCmdToOpenmv(task_number);
+	rasCmdToOpenmv(task_number);
 
 	OPENMV_WORK_ENABLE_PIN = 1; //通知openmv开始工作 将该引脚置高
-	systemEventUpdate(EVENT_OPENMVBOOTUP);
-	delay_ms(100);  //wait openmv initialize
+//	systemEventUpdate(EVENT_OPENMVBOOTUP);
+	delay_ms(600);  //wait openmv initialize
+	set_new_vel(0.0, 0.0, TASK_HEIGHT);
 
 	debug_text("openmv initialized");
     switch (task_number){
@@ -217,9 +205,16 @@ void R_MAIN_UserInit(void)
 	R_CMT3_Start();
 	R_RSPI0_Start();
 	spiReceive(rx_buffer);
+
+	while(!SYSTEM_BOOTUP)
+	{
+		debug_text("wait system bootup\n");
+		delay_ms(50);
+	}
+
+	alarm_bibi();
+
 	init(SCI1_Serial_Send,delay_ms,millis,uart_5_printf);
-
-
 	flag_data_updated=getFlagDataUpdated();
 	apm_attitude=getAttitude();
 	apm_height = get_height();
@@ -237,180 +232,7 @@ void R_MAIN_UserInit(void)
 }
 
 /* Start user code for adding. Do not edit comment generated here */
-int rasTaskSwitch(void)
-{
 
-	if(!(RSA_TASK_SWICH1) && !(RSA_TASK_SWICH2))
-	{
-		debug_text("\nchoose tast1\n");
-		return TASK1;
-	}
-	else if(!(RSA_TASK_SWICH1) && RSA_TASK_SWICH2 )
-	{
-		return TASK2;
-	}
-	else if(RSA_TASK_SWICH1 && !(RSA_TASK_SWICH2))
-	{
-		return TASK3;
-	}
-	else if(RSA_TASK_SWICH1 && RSA_TASK_SWICH2)
-	{
-		return TASK4;
-	}
-	else
-		return -1;
-}
-
-void task1(void)
-{
-	int land_mark = 0;
-	float x_offset = 0.0, y_offset = 0.0,
-			x_speed = 0.0, y_speed =0.0;
-	float preland_height=0;
-	debug_text("\nworking task1\n");
-	while(1)
-	{
-		task_cycle_timer = millis();
-		runtime = millis();
-		if((runtime - last_heartbeat_time) >= 1000)
-		{
-			//send heartbeat
-			S_heartbeat();
-			last_heartbeat_time = runtime;
-			systemEventUpdate(EVENT_SEND_HEARTBEAT);
-			debug_text("send heartbeat \n");
-		}
-
-		while(openmv_data[DATA_READY] == 0)
-		{
-			if(millis()-runtime>2000){
-				debug_text("OpenMV stop aiding!\n");
-				systemErrorUpdate(ERROR_OPENMV_CRASH);
-				//TODO: OpenMV Crash Handle
-				mav_land();
-			}
-		}
-		if(openmv_data[DATA_READY] == 1)
-		{
-			if(openmv_data[ERROR_FLAG] == 0)
-			{
-//				debug_text(" no error \n ");
-//				systemDataUpdate(openmv_data,5,MONITOR_DATA_OPENMV_DATA);
-				if(openmv_data[LAND_FLAG] ==1)
-				{
-					systemEventUpdate(EVENT_LAND);
-					while(1)
-					{
-						mav_land();
-						systemEventUpdate(EVENT_LANDED);
-						debug_text("\n landed \n");
-						delay_ms(200);
-					}
-
-			    }
-				else
-				{
-					switch (openmv_data[MAV_STATUS])
-					{
-						case MAV_STATUS_INIT:
-							break;
-						case MAV_STATUS_TAKEOFF:
-//							systemEventUpdate(EVENT_XUNXIAN);
-							//dataFushion();
-							y_offset = rasY_offsetCalculate(openmv_data[2]);
-							//pid
-							y_input = y_offset;
-							yCompute(&y_input);
-							y_speed = y_output;
-							//send to apm
-							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-//							y_offset = y_offset*0.01;
-//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
-//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-							debug_text("take off status ");
-							uart_5_printf(" speed :%f \n", y_speed);
-							break;
-						case MAV_STATUS_FLYING:
-//							systemEventUpdate(EVENT_XUNXIAN);
-
-							y_offset = rasY_offsetCalculate(openmv_data[2]);
-							//pid
-							y_input = y_offset;
-							yCompute(&y_input);
-							y_speed = y_output;
-
-							//send to apm
-							set_new_vel(TASK1_X_SPEED, y_speed, TASK_HEIGHT);
-//							y_offset = y_offset*0.01;
-//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
-//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-							debug_text("flying  ");
-							uart_5_printf(" speed :%f \n", y_speed);
-							break;
-						case MAV_STATUS_PRELAND:
-							preland_height+=0.005;
-							if(TASK_HEIGHT-preland_height<=0.4){
-								preland_height=TASK_HEIGHT-0.4;
-							}
-//							systemEventUpdate(EVENT_PRELAND);
-							//dataFushion();
-							x_offset = rasX_offsetCalculate(openmv_data[3]);
-							y_offset = rasY_offsetCalculate(openmv_data[2]);
-							//pid
-							y_input = y_offset;
-							yCompute(&y_input);
-							y_speed = y_output;
-
-							x_input = x_offset;
-							xCompute(&x_input);
-							x_speed = x_output;
-							//send to apm
-
-							set_new_vel(x_speed, y_speed, TASK_HEIGHT-preland_height);
-//							y_offset = y_offset*0.01;
-//							systemDataUpdate(&y_offset, 1, DATA_Y_OFFSET_RESULT);
-//							systemDataUpdate(&y_speed,1,DATA_PID_Y_SPEED);
-//							x_offset = x_offset*0.01;
-//							systemDataUpdate(&x_offset, 1, DATA_X_OFFSET_RESULT);
-//							systemDataUpdate(&x_speed,1,DATA_PID_X_SPEED);
-							debug_text("preland  ");
-							uart_5_printf(" x_speed :%f y_speed %f   height %f \n", x_speed,y_speed,TASK_HEIGHT-preland_height);
-							break;
-						case MAV_STATUS_OVERFLY:
-//							systemEventUpdate(EVENT_OVERFLY);
-							set_new_vel(TASK1_X_SPEED_OVERFLY, 0, TASK_HEIGHT);
-							debug_text("over fly \n");
-							break;
-						case MAV_STATUS_ERROR:
-							break;
-					}  //choose status
-				}  //determine land or not
-			}  //determine error flag
-			else
-			{
-				taskError(openmv_data[ERROR_FLAG]);
-//				debug_text("\nerror status\n");
-				uart_5_printf("error status %d \n",openmv_data[ERROR_FLAG]);
-			}
-			//update last_error_flag
-			last_error_flag=openmv_data[ERROR_FLAG];
-			//reset data ready flag
-			openmv_data[DATA_READY] = 0;
-		}  //determine data ready flag
-		else
-		{
-			debug_text("wait new data\n");
-//			systemEventUpdate(EVENT_WAIT_NEW_DATA);
-		}
-		task_cycle_time_monitor = millis() - task_cycle_timer;
-		if(task_cycle_time_monitor > 60)
-		{
-//			systemErrorUpdate(ERROR_TASK_TIMEOUT);
-			debug_text("task timeout: %d\n",task_cycle_time_monitor);
-		}
-	} //task loop
-
-}
 void task2(void)
 {
 
@@ -422,52 +244,6 @@ void task3(void)
 void task4(void)
 {
 
-}
-
-void taskError(uint8_t openmverror){
-	static int error_count=1;
-	if(last_error_flag==1)
-	{
-		error_count++;
-	}
-	else{
-		error_count=0;
-	}
-	debug_text("[taskError()] Task error!\n");
-//	systemErrorUpdate(ERROR_SPI_DATA);
-	if(error_count >= TASK_ERROR_THRESHOLD)
-	{
-		mav_land();
-		debug_text("\n[taskError()] error overflow! forced landing \n");
-//		systemErrorUpdate(ERROR_OPENMV_DATA_ABNORMAL);
-	}
-}
-void rasCmdToOpenmv(uint8_t flag)
-{
-	if(flag ==TASK1)
-	{
-		OPENMV_TASK_SWICH1 = 0;
-		OPENMV_TASK_SWICH2 = 0;
-	}
-	else if(flag ==TASK2)
-	{
-		OPENMV_TASK_SWICH1 = 1;
-		OPENMV_TASK_SWICH2 = 0;
-	}
-	else if(flag ==TASK3)
-	{
-		OPENMV_TASK_SWICH1 = 0;
-		OPENMV_TASK_SWICH2 = 1;
-	}
-	else if(flag ==TASK4)
-	{
-		OPENMV_TASK_SWICH1 = 1;
-		OPENMV_TASK_SWICH2 = 1;
-	}
-	else
-	{
-		systemErrorUpdate(ERROR_TASK_NUMBER);
-	}
 }
 /*
 void rasWirelessAdjustParameters(void)

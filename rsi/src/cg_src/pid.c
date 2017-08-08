@@ -82,7 +82,7 @@ int xCompute(double * Input)
 	  if(output > x_pid.outMax) output = x_pid.outMax;
       else if(output < x_pid.outMin) output = x_pid.outMin;
 	  output = output *0.5/255;
-	  *x_pid.myOutput = output;
+	  *x_pid.myOutput = -output;
 	  
       /*Remember some variables for next time*/
       x_pid.lastInput = input;

@@ -35,24 +35,39 @@ User definitions
 
 /* Start user code for function. Do not edit comment generated here */
 #include "../Mavlink_lib/Mavlink_lib.h"
+#include "pid.h"
+#include "buzzer.h"
+#include "15_task1.h"
 #include "user_main.h"
+#include "error_handle.h"
+#include "task_choose.h"
+#include "systemmonitor.h"
+#include "offset_calculate.h"
 
 /*******************************************/
 /***************port define*****************/
-#define OPENMV_WORK_ENABLE_PIN  PORT9.PODR.BIT.B1
-#define RSA_WORK_ENABLE_PIN 	PORT9.PIDR.BIT.B2
 
-#define OPENMV_TASK_SWICH1		PORT7.PODR.BIT.B3
-#define OPENMV_TASK_SWICH2 		PORT7.PODR.BIT.B4
+#define RSA_WORK_ENABLE_PIN     PORT4.PIDR.BIT.B1   //NO.55
+#define RSA_TASK_SWICH1         PORT4.PIDR.BIT.B7   //NO.49
+#define RSA_TASK_SWICH2         PORT4.PIDR.BIT.B6   //NO.50
+#define RSA_TASK_SWICH3         PORT4.PIDR.BIT.B5   //NO.51
 
-#define RSA_TASK_SWICH1 		PORT7.PIDR.BIT.B6
-#define RSA_TASK_SWICH2 		PORT7.PIDR.BIT.B5
+
+#define OPENMV_WORK_ENABLE_PIN  PORT4.PODR.BIT.B0   //NO.56
+#define OPENMV_TASK_SWICH1      PORT4.PODR.BIT.B4   //NO.52
+#define OPENMV_TASK_SWICH2      PORT4.PODR.BIT.B3   //NO.53
+#define OPENMV_TASK_SWICH3      PORT4.PODR.BIT.B2   //NO.54
+
+#define SYSTEM_BOOTUP_ALARM     PORT0.PODR.BIT.B0   //NO.02
+
+#define SYSTEM_BOOTUP          RSA_WORK_ENABLE_PIN   //NO.55
 
 /*****const define********/
 #define Pi 3.1416
-#define TASK_HEIGHT 0.7
-#define TASK1_X_SPEED 0.3
-#define TASK1_X_SPEED_OVERFLY -0.15
+#define TASK_HEIGHT		   		 0.7
+#define TASK_ERROR_HEIGHT   	 1.0
+#define TASK1_X_SPEED		     0.2
+#define TASK1_X_SPEED_OVERFLY    -0.15
 
 
 /*********task flags************/
@@ -60,6 +75,10 @@ User definitions
 #define TASK2  2
 #define TASK3  3
 #define TASK4  4
+#define TASK5  5
+#define TASK6  6
+#define TASK7  7
+#define TASK8  8
 
 
 /***********data refering*************/
@@ -99,7 +118,6 @@ User definitions
 #define EVENT_PRELAND 1
 #define EVENT_OVERFLY 1
 #define EVENT_LAND 1
-#define EVENT_LANDED 1
 
 
 //define system error
