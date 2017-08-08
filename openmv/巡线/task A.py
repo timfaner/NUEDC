@@ -154,6 +154,7 @@ while(True):
     or ismatchwith(old_mav_statu,mav_statu,2,4) \
     or ismatchwith(old_mav_statu,mav_statu,4,3) \
     or ismatchwith(old_mav_statu,mav_statu,2,3) \
+    or ismatchwith(old_mav_statu,mav_statu,3,2) \
     or ismatchwith(old_mav_statu,mav_statu,2,1) \
     or old_mav_statu == 0 and mav_statu != 0 \
     or ismatchwith(old_mav_statu,mav_statu,1,1) \
