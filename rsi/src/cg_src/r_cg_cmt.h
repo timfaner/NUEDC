@@ -23,7 +23,7 @@
 * Device(s)    : R5F523T5AxFM
 * Tool-Chain   : CCRX
 * Description  : This file implements device driver for CMT module.
-* Creation Date: 2017/7/17
+* Creation Date: 2017/8/6
 ***********************************************************************************************************************/
 #ifndef CMT_H
 #define CMT_H
@@ -68,8 +68,8 @@ Macro definitions (Register bit)
 /***********************************************************************************************************************
 Macro definitions
 ***********************************************************************************************************************/
+#define _0004_CMT2_CMCOR_VALUE                  (0x0004U) /* Compare match value */
 #define _1387_CMT3_CMCOR_VALUE                  (0x1387U) /* Compare match value */
-#define _01F3_CMT2_CMCOR_VALUE                  (0x01F3U) /* Compare match value */
 
 /***********************************************************************************************************************
 Typedef definitions
@@ -78,17 +78,17 @@ Typedef definitions
 /***********************************************************************************************************************
 Global functions
 ***********************************************************************************************************************/
-void R_CMT3_Create(void);
-void R_CMT3_Start(void);
-void R_CMT3_Stop(void);
 void R_CMT2_Create(void);
 void R_CMT2_Start(void);
 void R_CMT2_Stop(void);
+void R_CMT3_Create(void);
+void R_CMT3_Start(void);
+void R_CMT3_Stop(void);
 
 /* Start user code for function. Do not edit comment generated here */
 unsigned long millis(void);
-unsigned long millis_us(void);
-void delay_100us(unsigned int us);
+unsigned long millis_us_function(void);
+void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 /* End user code. Do not edit comment generated here */
 #endif
